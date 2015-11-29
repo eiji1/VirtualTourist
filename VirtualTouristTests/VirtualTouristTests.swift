@@ -7,6 +7,10 @@
 //
 
 import XCTest
+import XCTest
+import VirtualTourist
+import CoreLocation
+
 @testable import VirtualTourist
 
 class VirtualTouristTests: XCTestCase {
@@ -32,5 +36,23 @@ class VirtualTouristTests: XCTestCase {
             // Put the code you want to measure the time of here.
         }
     }
-    
+	
+	func testFlickrPhotoSearch() {
+		
+		let location = CLLocationCoordinate2DMake(35.6897,139.6922)
+		
+		let expectation = expectationWithDescription("search")
+		
+		TestingHelper.getImages(location) { photos, total , success in
+			if success {
+				//let userId = TestingHelper.getImages()
+				expectation.fulfill()
+			} else {
+				print("login failed")
+				XCTAssert(false, "failed")
+			}
+		}
+		
+		self.waitForExpectationsWithTimeout(10.0, handler:nil)
+	}
 }

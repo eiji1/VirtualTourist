@@ -14,7 +14,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 	var window: UIWindow?
 
-
 	func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
 		// Override point for customization after application launch.
 		return true
@@ -43,6 +42,29 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 		// Saves changes in the application's managed object context before the application terminates.
 		self.saveContext()
 	}
+
+	// async dispatching
+	
+	/**
+	Submit functional block to be asynchronously executed on the global queue
+	
+	:param: handler target handler function which should be executed asynchronously
+	:returns: none
+	*/
+	func dispatch_async_globally(handler: () -> ()) {
+		dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), handler)
+	}
+	
+	/**
+	Submit functional block to be asynchronously executed on the main thread
+	
+	:param: handler target handler which should be executed asynchronously
+	:returns: none
+	*/
+	func dispatch_async_main(handler: () -> ()) {
+		dispatch_async(dispatch_get_main_queue(),handler);
+	}
+	
 
 	// MARK: - Core Data stack
 

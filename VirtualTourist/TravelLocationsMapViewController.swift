@@ -67,7 +67,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	
 	// go to the specified location
 	private func moveToALocation(coordinate: CLLocationCoordinate2D) {
-		let coordDelta = 20.0
+		let coordDelta = 5.0
 		let span = MKCoordinateSpanMake(coordDelta, coordDelta)
 		let region = MKCoordinateRegionMake(coordinate, span)
 		let animationOptions : UIViewAnimationOptions = [UIViewAnimationOptions.CurveEaseInOut, UIViewAnimationOptions.AllowUserInteraction, UIViewAnimationOptions.OverrideInheritedDuration]
