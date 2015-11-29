@@ -9,39 +9,10 @@
 import Foundation
 import MapKit
 
-public class Photo : NSObject {
-	var url: String = ""
-	var downloaded = false
-	
-	public init(dictionary: [String : AnyObject]) {
-		url = dictionary[FlickrClient.JSONResponseKeys.Url] as! String
-		
-		super.init()
-	}
-	
-	static func getPhotoFromResults(results: [[String : AnyObject]]) -> [Photo] {
-		var photos = [Photo]()
-		for result in results {
-			photos.append(Photo(dictionary: result))
-		}
-		return photos
-	}
-	
-	static func checkAllPhotoDownloaded(photos: [Photo]) -> Bool {
-		var isDownloaded = true
-		for photo in photos {
-			isDownloaded = isDownloaded && photo.downloaded
-		}
-		return isDownloaded
-	}
-}
-
-
 class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource {
 	let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
 
-	var location :CLLocationCoordinate2D!
-	var photos: [Photo] = []
+	var pin :Pin!
 	var page = 1
 	
 	@IBOutlet weak var mapView: MKMapView!
@@ -54,8 +25,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource {
 	
 	override func viewDidAppear(animated: Bool) {
 		super.viewDidAppear(animated)
-		let newPin = Pin(coordinates: location)
-		newPin.show(mapView)
+		pin.show(mapView)
 
 		getImagesFromFlickr()
 	}
@@ -77,10 +47,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource {
 	private func getImagesFromFlickr() {
 		newCollectionButton.enabled = false
 		
-		FlickrClient().getImagesBySearch(location, page: page) { photos, total , success in
+		FlickrClient().getImagesBySearch(pin.coordinate, page: page) { photos, total , success in
 			if success {
 				print("getting image scceeded!")
-				self.photos = photos
+				self.pin.photos = photos
 				self.sharedApp.dispatch_async_main {
 					self.collectionView.reloadData()
 				}
@@ -92,8 +62,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource {
 	// returns the number of collection view cells
 	func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
 		print("getting num cells")
-		print(photos.count)
-		return photos.count == 0 ? 0 : photos.count
+		print(pin.photos.count)
+		return pin.photos.count == 0 ? 0 : pin.photos.count
 	}
 	
 	// render a collection cell specified with indexPath
@@ -104,7 +74,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource {
 		cell.imageView.contentMode = UIViewContentMode.ScaleAspectFit
 
 		print("start downloading image \(rowIndex)")
-		let photo = photos[rowIndex]
+		let photo = pin.photos[rowIndex]
 		
 		if !photo.downloaded {
 			// show the placeholder on downloading an image
@@ -118,7 +88,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource {
 					
 					self.sharedApp.dispatch_async_main {
 						cell.imageView.image = UIImage(data: imageData!)
-						if Photo.checkAllPhotoDownloaded(self.photos) {
+						if Photo.checkAllPhotoDownloaded(self.pin.photos) {
 							self.newCollectionButton.enabled = true
 						}
 					}

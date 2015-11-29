@@ -9,29 +9,11 @@
 import UIKit
 import MapKit
 
-final class Pin: NSObject, MKAnnotation {
-	var coordinate: CLLocationCoordinate2D
-	
-	init(coordinates: CLLocationCoordinate2D) {
-		self.coordinate = coordinates
-		super.init()
-	}
-	
-	func show(mapView: MKMapView) {
-		mapView.removeAnnotation(self)
-		mapView.addAnnotation(self)
-	}
-	
-	func hide(mapView: MKMapView) {
-		mapView.removeAnnotation(self)
-	}
-}
-
 class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognizerDelegate {
 	
 	let DefaultLocation = CLLocationCoordinate2DMake(35.6897,139.6922)
 	
-	var pin :Pin?
+	var pinArray :[Pin] = [Pin]()
 	
 	@IBOutlet weak var mapView: MKMapView!
 	
@@ -61,7 +43,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		if segue.identifier == "showPhotoAlbum" {
 			let photoAlbumViewController = segue.destinationViewController as? PhotoAlbumViewController
 			let selectedPin = sender as! Pin
-			photoAlbumViewController?.location = selectedPin.coordinate
+			photoAlbumViewController?.pin = selectedPin
 		}
 	}
 	
@@ -85,14 +67,17 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		let coordinates = mapView.convertPoint(tapPoint, toCoordinateFromView: mapView)
 		
 		if gestureRecognizer.state == UIGestureRecognizerState.Began {
-			pin = Pin(coordinates: coordinates)
-			pin?.coordinate = coordinates
+			let pin = Pin(coordinates: coordinates)
+			pinArray.append(pin)
 		}
 		else if gestureRecognizer.state == UIGestureRecognizerState.Changed {
-			pin?.coordinate = coordinates
+			let pin = pinArray.last
+			pin!.coordinate = coordinates
 		}
 		
-		pin?.show(mapView)
+		pinArray.forEach { (pin) -> () in
+			pin.show(mapView)
+		}
 	}
 	
 	// on the pin selected
