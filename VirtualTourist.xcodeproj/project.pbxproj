@@ -22,6 +22,9 @@
 		CE0809F91C0B33C100E427F4 /* PhotoCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0809F81C0B33C100E427F4 /* PhotoCollectionViewCell.swift */; };
 		CE1455AA1C0B707E00309B49 /* Pin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1455A91C0B707E00309B49 /* Pin.swift */; };
 		CE1455AC1C0B70AD00309B49 /* Photo.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1455AB1C0B70AD00309B49 /* Photo.swift */; };
+		CE1455AE1C0B7B9100309B49 /* CoreDataStackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1455AD1C0B7B9100309B49 /* CoreDataStackManager.swift */; };
+		CE1455B01C0C931600309B49 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1455AF1C0C931500309B49 /* ImageCache.swift */; };
+		CE1455B21C0CBE4700309B49 /* ImageDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1455B11C0CBE4700309B49 /* ImageDownloader.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -63,6 +66,9 @@
 		CE0809F81C0B33C100E427F4 /* PhotoCollectionViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoCollectionViewCell.swift; sourceTree = "<group>"; };
 		CE1455A91C0B707E00309B49 /* Pin.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Pin.swift; sourceTree = "<group>"; };
 		CE1455AB1C0B70AD00309B49 /* Photo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Photo.swift; sourceTree = "<group>"; };
+		CE1455AD1C0B7B9100309B49 /* CoreDataStackManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CoreDataStackManager.swift; sourceTree = "<group>"; };
+		CE1455AF1C0C931500309B49 /* ImageCache.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
+		CE1455B11C0CBE4700309B49 /* ImageDownloader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageDownloader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -121,6 +127,9 @@
 				CE0809F41C0B177500E427F4 /* FlickrClient.swift */,
 				CE1455A91C0B707E00309B49 /* Pin.swift */,
 				CE1455AB1C0B70AD00309B49 /* Photo.swift */,
+				CE1455AD1C0B7B9100309B49 /* CoreDataStackManager.swift */,
+				CE1455AF1C0C931500309B49 /* ImageCache.swift */,
+				CE1455B11C0CBE4700309B49 /* ImageDownloader.swift */,
 				CE0809C31C0367AE00E427F4 /* Main.storyboard */,
 				CE0809C91C0367AE00E427F4 /* Assets.xcassets */,
 				CE0809CB1C0367AE00E427F4 /* LaunchScreen.storyboard */,
@@ -285,9 +294,12 @@
 			files = (
 				CE0809F71C0B237E00E427F4 /* TestingHelper.swift in Sources */,
 				CE0809F91C0B33C100E427F4 /* PhotoCollectionViewCell.swift in Sources */,
+				CE1455B21C0CBE4700309B49 /* ImageDownloader.swift in Sources */,
+				CE1455AE1C0B7B9100309B49 /* CoreDataStackManager.swift in Sources */,
 				CE0809F11C036CF100E427F4 /* PhotoAlbumViewContoller.swift in Sources */,
 				CE1455AA1C0B707E00309B49 /* Pin.swift in Sources */,
 				CE1455AC1C0B70AD00309B49 /* Photo.swift in Sources */,
+				CE1455B01C0C931600309B49 /* ImageCache.swift in Sources */,
 				CE0809C21C0367AE00E427F4 /* TravelLocationsMapViewController.swift in Sources */,
 				CE0809C01C0367AE00E427F4 /* AppDelegate.swift in Sources */,
 				CE0809F31C0B168200E427F4 /* WebClient.swift in Sources */,

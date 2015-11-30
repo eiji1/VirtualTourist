@@ -8,8 +8,10 @@
 
 import UIKit
 import MapKit
+import CoreData
 
 class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognizerDelegate {
+	let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
 	
 	let DefaultLocation = CLLocationCoordinate2DMake(35.6897,139.6922)
 	
@@ -28,6 +30,9 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		longTap.numberOfTapsRequired = 0
 		longTap.minimumPressDuration = 1.0
 		mapView.addGestureRecognizer(longTap)
+		
+		fetchPinObjects()
+		
 	}
 	
 	override func viewWillAppear(animated: Bool) {
@@ -37,6 +42,9 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	override func viewDidAppear(animated: Bool) {
 		super.viewWillAppear(animated)
 		moveToALocation(DefaultLocation)
+		pinArray.forEach { (pin) -> () in
+			pin.show(mapView)
+		}
 	}
 	
 	override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
@@ -45,6 +53,21 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 			let selectedPin = sender as! Pin
 			photoAlbumViewController?.pin = selectedPin
 		}
+	}
+	
+	// fetch Pin objects
+	private func fetchPinObjects() {
+		let coreData = sharedApp.coreDataStackManager
+		
+		let fetchRequest = NSFetchRequest(entityName: "Pin")
+		do {
+		let results = try coreData.managedObjectContext.executeFetchRequest(fetchRequest)
+			pinArray = results as! [Pin]
+			print(pinArray)
+		} catch let error as NSError {
+			print("Could not fetch \(error), \(error.userInfo)")
+		}
+		
 	}
 	
 	// go to the specified location
@@ -64,15 +87,25 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	func onLongTapping(gestureRecognizer: UIGestureRecognizer) {
 		// get the coordinates that was tapped
 		let tapPoint: CGPoint = gestureRecognizer.locationInView(mapView)
-		let coordinates = mapView.convertPoint(tapPoint, toCoordinateFromView: mapView)
+		let coordinate = mapView.convertPoint(tapPoint, toCoordinateFromView: mapView)
 		
 		if gestureRecognizer.state == UIGestureRecognizerState.Began {
-			let pin = Pin(coordinates: coordinates)
+			// create a new pin
+			let coreData = sharedApp.coreDataStackManager
+			
+			let pin = Pin(coordinate: coordinate, context: coreData.managedObjectContext)
 			pinArray.append(pin)
 		}
 		else if gestureRecognizer.state == UIGestureRecognizerState.Changed {
 			let pin = pinArray.last
-			pin!.coordinate = coordinates
+			pin?.coordinate = coordinate
+		}
+		else if gestureRecognizer.state == UIGestureRecognizerState.Ended {
+			// save the new pin
+			let coreData = sharedApp.coreDataStackManager
+			coreData.saveContext()
+			
+			//prefetchImageFromFlickr(pinArray.last!)
 		}
 		
 		pinArray.forEach { (pin) -> () in
@@ -86,5 +119,10 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		self.performSegueWithIdentifier("showPhotoAlbum", sender: selectedPin)
 	}
 	
+	
+	func prefetchImageFromFlickr(pin: Pin) {
+		let photoAlbumViewController = self.storyboard!.instantiateViewControllerWithIdentifier("PhotoAlbumViewController") as! PhotoAlbumViewController
+		
+		photoAlbumViewController.getImagesFromFlickr(pin)
+	}
 }
-

@@ -3,31 +3,41 @@
 //  VirtualTourist
 //
 //  Created by eiji on 2015/11/30.
-//  Copyright © 2015年 Udacity. All rights reserved.
+//  Copyright © 2015 Udacity. All rights reserved.
 //
 
 import Foundation
 
 import UIKit
 import MapKit
+import CoreData
 
-final class Pin: NSObject, MKAnnotation {
+class Pin: NSManagedObject, MKAnnotation {
+	@NSManaged var longitude: Double
+	@NSManaged var latitude: Double
+	@NSManaged var photos: [Photo]
 	
-	var coordinate: CLLocationCoordinate2D
-	var photos: [Photo] = [Photo]()
-	
-	init(coordinates: CLLocationCoordinate2D) {
-		self.coordinate = coordinates
-		super.init()
+	var coordinate: CLLocationCoordinate2D {
+		get { return CLLocationCoordinate2DMake(latitude, longitude) }
+		set(newCoordinate) {
+			latitude = newCoordinate.latitude
+			longitude = newCoordinate.longitude
+		}
 	}
 	
+	override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {
+		super.init(entity: entity, insertIntoManagedObjectContext: context)
+	}
+	
+	init(coordinate: CLLocationCoordinate2D, context: NSManagedObjectContext) {
+		let entity =  NSEntityDescription.entityForName("Pin", inManagedObjectContext: context)!
+		super.init(entity: entity, insertIntoManagedObjectContext: context)
+		self.coordinate = coordinate
+	}
+
 	func show(mapView: MKMapView) {
 		mapView.removeAnnotation(self)
 		mapView.addAnnotation(self)
-	}
-	
-	func hide(mapView: MKMapView) {
-		mapView.removeAnnotation(self)
 	}
 }
 

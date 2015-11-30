@@ -42,7 +42,7 @@
         <!--Photo Album View Controller-->
         <scene sceneID="saZ-nw-iV3">
             <objects>
-                <viewController id="dqT-bj-1BT" customClass="PhotoAlbumViewController" customModule="VirtualTourist" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="PhotoAlbumViewController" id="dqT-bj-1BT" customClass="PhotoAlbumViewController" customModule="VirtualTourist" customModuleProvider="target" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="Z7x-oq-Hpt"/>
                         <viewControllerLayoutGuide type="bottom" id="BMZ-fv-aOn"/>
@@ -55,7 +55,7 @@
                                 <rect key="frame" x="38" y="52" width="520" height="107"/>
                             </mapView>
                             <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Mjg-hZ-xks">
-                                <rect key="frame" x="38" y="550" width="520" height="30"/>
+                                <rect key="frame" x="38" y="535" width="520" height="45"/>
                                 <color key="backgroundColor" red="0.93725490199999995" green="0.93725490199999995" blue="0.95686274510000002" alpha="1" colorSpace="calibratedRGB"/>
                                 <state key="normal" title="New Collection">
                                     <color key="titleShadowColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
@@ -92,17 +92,17 @@
                                             <rect key="frame" x="0.0" y="0.0" width="104" height="100"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="iLV-gs-h4A">
-                                                    <rect key="frame" x="18" y="16" width="50" height="50"/>
+                                                <imageView multipleTouchEnabled="YES" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="iLV-gs-h4A">
+                                                    <rect key="frame" x="16" y="14" width="72" height="72"/>
                                                 </imageView>
                                             </subviews>
                                             <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                                         </view>
                                         <constraints>
-                                            <constraint firstItem="iLV-gs-h4A" firstAttribute="top" secondItem="dMD-Gl-eIP" secondAttribute="topMargin" id="8sI-BT-haR"/>
-                                            <constraint firstAttribute="trailingMargin" secondItem="iLV-gs-h4A" secondAttribute="trailing" id="akm-iz-gGp"/>
-                                            <constraint firstItem="iLV-gs-h4A" firstAttribute="leading" secondItem="dMD-Gl-eIP" secondAttribute="leadingMargin" id="dY2-U8-mid"/>
-                                            <constraint firstAttribute="bottomMargin" secondItem="iLV-gs-h4A" secondAttribute="bottom" id="nfX-oQ-3vk"/>
+                                            <constraint firstItem="iLV-gs-h4A" firstAttribute="top" secondItem="dMD-Gl-eIP" secondAttribute="topMargin" id="2FB-4c-B7K"/>
+                                            <constraint firstAttribute="trailingMargin" secondItem="iLV-gs-h4A" secondAttribute="trailing" id="Asp-92-VQ8"/>
+                                            <constraint firstItem="iLV-gs-h4A" firstAttribute="leading" secondItem="dMD-Gl-eIP" secondAttribute="leadingMargin" id="iAe-yf-3qa"/>
+                                            <constraint firstAttribute="bottomMargin" secondItem="iLV-gs-h4A" secondAttribute="bottom" id="uNb-xi-geH"/>
                                         </constraints>
                                         <connections>
                                             <outlet property="imageView" destination="iLV-gs-h4A" id="lVt-cQ-8Qr"/>
@@ -118,8 +118,10 @@
                         <constraints>
                             <constraint firstItem="3a3-eA-gt3" firstAttribute="leading" secondItem="bId-xD-d7n" secondAttribute="leadingMargin" id="148-1l-pnn"/>
                             <constraint firstItem="BMZ-fv-aOn" firstAttribute="top" secondItem="Mjg-hZ-xks" secondAttribute="bottom" id="Bm4-q4-f3T"/>
+                            <constraint firstItem="X12-nt-cv3" firstAttribute="top" secondItem="3a3-eA-gt3" secondAttribute="bottom" id="JFu-9b-YGT"/>
                             <constraint firstItem="X12-nt-cv3" firstAttribute="leading" secondItem="bId-xD-d7n" secondAttribute="leadingMargin" id="Yut-6d-E7E"/>
                             <constraint firstAttribute="trailingMargin" secondItem="X12-nt-cv3" secondAttribute="trailing" id="nYR-ld-esV"/>
+                            <constraint firstItem="Mjg-hZ-xks" firstAttribute="top" secondItem="X12-nt-cv3" secondAttribute="bottom" id="pTG-Qi-M4I"/>
                             <constraint firstItem="Mjg-hZ-xks" firstAttribute="leading" secondItem="bId-xD-d7n" secondAttribute="leadingMargin" id="qEM-hR-WOz"/>
                             <constraint firstAttribute="trailingMargin" secondItem="3a3-eA-gt3" secondAttribute="trailing" id="sDV-TS-2lJ"/>
                             <constraint firstAttribute="trailingMargin" secondItem="Mjg-hZ-xks" secondAttribute="trailing" id="voa-9v-rYR"/>
