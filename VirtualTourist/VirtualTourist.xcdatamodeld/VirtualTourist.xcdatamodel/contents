@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="9057" systemVersion="14F1021" minimumToolsVersion="Automatic">
+    <entity name="Map" representedClassName=".Map" syncable="YES">
+        <attribute name="centerLat" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="centerLon" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="regionSize" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+    </entity>
     <entity name="Photo" representedClassName=".Photo" syncable="YES">
         <attribute name="downloaded" attributeType="Boolean" syncable="YES"/>
         <attribute name="identifier" attributeType="String" syncable="YES"/>
+        <attribute name="path" attributeType="String" syncable="YES"/>
         <attribute name="url" attributeType="String" syncable="YES"/>
         <relationship name="pin" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Pin" inverseName="photos" inverseEntity="Pin" syncable="YES"/>
     </entity>
@@ -13,6 +19,7 @@
     </entity>
     <elements>
         <element name="Pin" positionX="-63" positionY="-18" width="128" height="90"/>
-        <element name="Photo" positionX="-54" positionY="0" width="128" height="105"/>
+        <element name="Photo" positionX="-54" positionY="0" width="128" height="120"/>
+        <element name="Map" positionX="-45" positionY="54" width="128" height="90"/>
     </elements>
 </model>

@@ -199,6 +199,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 				print("finish downloading image \(indexPath.row)")
 				
 				self.imageStorage.storeImage(image, identifier: photo.identifier)
+				photo.path = self.imageStorage.createFileURL(photo.identifier)
 				photo.downloaded = true
 				
 				let coreData = self.sharedApp.coreDataStackManager

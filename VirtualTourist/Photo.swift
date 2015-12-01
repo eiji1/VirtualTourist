@@ -13,6 +13,7 @@ import UIKit // shared app
 public class Photo : NSManagedObject {
 	@NSManaged var url: String
 	@NSManaged var identifier: String
+	@NSManaged var path: String
 	@NSManaged var downloaded: Bool
 	@NSManaged var pin: Pin?
 	
@@ -26,6 +27,7 @@ public class Photo : NSManagedObject {
 		url = dictionary[FlickrClient.JSONResponseKeys.Url] as! String
 		downloaded = false
 		identifier = ""
+		path = ""
 	}
 
 	static func getPhotoFromResults(results: [[String : AnyObject]]) -> [Photo] {
