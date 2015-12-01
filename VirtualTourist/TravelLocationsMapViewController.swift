@@ -11,7 +11,6 @@ import MapKit
 import CoreData
 
 class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognizerDelegate {
-	let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
 	
 	let DefaultLocation = CLLocationCoordinate2DMake(35.6897,139.6922)
 	let DefaultRegionSize = 5.0
@@ -102,7 +101,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		else if gestureRecognizer.state == UIGestureRecognizerState.Ended {
 			storeMapObject() // and new Pin will be stored here
 			
-			//prefetchImageFromFlickr(pinArray.last!)
+			prefetchImageFromFlickr(pinArray.last!)
 		}
 		
 		pinArray.forEach { (pin) -> () in
@@ -173,8 +172,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		let regionSize = mapView.region.span.latitudeDelta // same as longitudeDelata
 		let center = mapView.region.center
 		map.regionSize = regionSize
-		map.centerLat = center.latitude
-		map.centerLon = center.longitude
+		map.center = center
 		
 		coreDataStack.saveContext()
 	}
@@ -193,6 +191,6 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	
 	func prefetchImageFromFlickr(pin: Pin) {
 		let photoAlbumViewController = self.storyboard!.instantiateViewControllerWithIdentifier("PhotoAlbumViewController") as! PhotoAlbumViewController
-		photoAlbumViewController.getImagesFromFlickr(pin)
+		photoAlbumViewController.getImagesFromFlickr(pin) {}
 	}
 }
