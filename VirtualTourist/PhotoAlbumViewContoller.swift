@@ -54,8 +54,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	
 	override func viewDidAppear(animated: Bool) {
 		super.viewDidAppear(animated)
-		pin.show(mapView)
-
+		
+		showMap()
 		fetchPhotoObjects()
 		
 		// no photo is downloaded
@@ -94,6 +94,17 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		}
 	}
 
+	/// show a map
+	private func showMap() {
+		if let map = pin.map {
+			let regionSize = map.regionSize
+			let span = MKCoordinateSpanMake(regionSize, regionSize)
+			let region = MKCoordinateRegionMake(pin.coordinate, span)
+			mapView.setRegion(region, animated: false);
+		}
+		
+		pin.show(mapView)
+	}
 	
 	//------------------------------------------------------------------------//
 	// helper methods for managed objects
@@ -260,7 +271,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 				trace("getting images from Flikcr!")
 				
 				for (index, photo) in photos.enumerate() {
-					photo.pin = pin
+					photo.pin = pin // set relationship
 					photo.identifier = "\(pin.identifier)_\(index)" // creating an identifier by index
 				}
 				

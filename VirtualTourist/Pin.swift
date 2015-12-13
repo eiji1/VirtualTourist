@@ -17,7 +17,7 @@ class Pin: NSManagedObject, MKAnnotation {
 	@NSManaged var latitude: Double
 	@NSManaged var timestamp: String
 	@NSManaged var photos: [Photo]
-	//@NSManaged var map: Map!
+	@NSManaged var map: Map?
 
 	var coordinate: CLLocationCoordinate2D {
 		get { return CLLocationCoordinate2DMake(latitude, longitude) }

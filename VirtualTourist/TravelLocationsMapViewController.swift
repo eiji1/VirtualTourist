@@ -26,7 +26,10 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 
 	// managed objects
 	var map: Map!
-	var pinArray :[Pin] = [Pin]()
+	
+	var pins: NSMutableOrderedSet {
+		get{ return map?.valueForKeyPath("pins") as! NSMutableOrderedSet }
+	}
 	
 	// core data
 	var coreDataStack: CoreDataStackManager {
@@ -62,8 +65,8 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		mapView.addGestureRecognizer(pan)
 		
 		// fetch managed objects from the core data DB
-		fetchPinObjects()
 		fetchMapObject()
+		fetchPinObjects()
 	}
 	
 	override func viewWillAppear(animated: Bool) {
@@ -74,10 +77,14 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		super.viewWillAppear(animated)
 		// go to the previous location
 		moveTo(map.center, regionSize: map.regionSize)
+
 		// render pins
-		pinArray.forEach { (pin) -> () in
-			pin.show(mapView)
+		for obj in pins {
+			if let pin = obj as? Pin {
+				pin.show(mapView)
+			}
 		}
+		
 	}
 	
 	override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
@@ -109,8 +116,6 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		else if gestureRecognizer.state == UIGestureRecognizerState.Ended {
 			onLongPressFinished(coordinate)
 		}
-		
-		//prefetchImageFromFlickr(pinArray.last!)
 	}
 	
 	func onLongPressStarted(coordinate: CLLocationCoordinate2D) {
@@ -120,14 +125,15 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		
 		// create a new pin
 		let newPin = Pin(coordinate: coordinate, context: managedObjectContext)
-		pinArray.append(newPin)
+		newPin.map = map // set relationship
+		pins.addObject(newPin)
 		
 		newPin.show(mapView)
 	}
 	
 	func onLongPressedAndDragging(coordinate: CLLocationCoordinate2D) {
 		// update the location of the last created pin
-		let pin = pinArray.last
+		let pin = pins.lastObject as? Pin
 		pin?.coordinate = coordinate
 		// and show it on the map
 		pin?.show(mapView)
@@ -135,7 +141,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	
 	func onLongPressFinished(coordinate: CLLocationCoordinate2D) {
 		// update the location of the pin
-		let pin = pinArray.last
+		let pin = pins.lastObject as? Pin
 		pin?.coordinate = coordinate
 		
 		storeMapObjects() // new pin will be stored on user's finger released
@@ -145,6 +151,8 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		
 		// allow map scroll again
 		mapView.scrollEnabled = true
+		
+		//prefetchImageFromFlickr(pin!)
 	}
 	
 	// on the map tapped
@@ -209,7 +217,15 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		let fetchRequest = NSFetchRequest(entityName: "Pin")
 		do {
 			let results = try managedObjectContext.executeFetchRequest(fetchRequest)
-			pinArray = results as! [Pin]
+			
+			let filteredPins = (results as! [Pin]).filter({ (pin) -> Bool in
+				return pin.map == self.map
+			})
+			
+			filteredPins.forEach({ (pin) -> () in
+				pins.addObject(pin)
+			})
+			
 		} catch let error as NSError {
 			errorLog("Could not fetch \(error), \(error.userInfo)")
 		}
@@ -224,12 +240,13 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 			let maps = results as! [Map]
 			if maps.count > 0 {
 				map = maps[0]
-				return
+			}
+			else {
+				map = Map(center: DefaultLocation, regionSize: DefaultRegionSize, context: managedObjectContext)
 			}
 		} catch let error as NSError {
 			errorLog("Could not fetch \(error), \(error.userInfo)")
 		}
-		map = Map(center: DefaultLocation, regionSize: DefaultRegionSize, context: managedObjectContext)
 	}
 	
 	private func storeMapObjects() {

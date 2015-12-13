@@ -16,6 +16,7 @@ class Map: NSManagedObject {
 	@NSManaged var regionSize :Double
 	@NSManaged var centerLat: Double
 	@NSManaged var centerLon: Double
+	@NSManaged var pins: [Pin] // TODO: Realize customized maps with different but persistent pin objects
 	
 	var center: CLLocationCoordinate2D {
 		get { return CLLocationCoordinate2DMake(centerLat, centerLon) }
