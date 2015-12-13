@@ -13,6 +13,7 @@ class ImageStorage {
 	
 	func getImage(identifier: String?) -> UIImage? {
 		
+		// checking invalid inputs
 		if identifier == nil {
 			return nil
 		}
@@ -20,11 +21,13 @@ class ImageStorage {
 			return nil
 		}
 		
+		// get data from memory
 		let cacheUrl = createCacheURL(identifier!)
 		if let image = getImageFromMemory(cacheUrl) {
 			return image
 		}
 		
+		// get data from file system
 		let fileUrl = createFileURL(identifier!)
 		if let image = getImageFromFileSystem(fileUrl) {
 			return image
@@ -34,9 +37,11 @@ class ImageStorage {
 	}
 	
 	func storeImage(image: UIImage?, identifier: String) {
+		// store data to memory
 		let cacheUrl = createCacheURL(identifier)
 		storeImageToMemory(image, path: cacheUrl)
-		
+
+		// store data to file system
 		let fileUrl = createFileURL(identifier)
 		storeImageToFileSystem(image, path: fileUrl)
 	}
@@ -92,6 +97,7 @@ class ImageStorage {
 		return fullURL.path!
 	}
 	
+	// enabling cache URL differed from the file URL
 	func createCacheURL(identifier: String) -> String {
 		return createFileURL(identifier)
 	}

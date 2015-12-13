@@ -9,6 +9,9 @@
 import CoreData
 import CoreLocation
 
+/**
+Map class stores currently displayed region. Application users can start map operations from the previous location whenever they finish this application.
+*/
 class Map: NSManagedObject {
 	@NSManaged var regionSize :Double
 	@NSManaged var centerLat: Double

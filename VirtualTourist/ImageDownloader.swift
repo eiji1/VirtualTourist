@@ -12,6 +12,7 @@ class ImageDownloader {
 	
 	func downloadImage(urlString: String, handler:(image: UIImage?, success: Bool)->()) {
 		let imageUrl = NSURL(string: urlString)
+		// retrieving a blob object
 		if let imageData = NSData(contentsOfURL: imageUrl!) {
 			let image = UIImage(data: imageData)
 			handler(image: image, success: true)

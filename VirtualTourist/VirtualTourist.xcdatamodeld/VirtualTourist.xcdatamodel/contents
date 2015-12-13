@@ -15,11 +15,12 @@
     <entity name="Pin" representedClassName=".Pin" syncable="YES">
         <attribute name="latitude" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
         <attribute name="longitude" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="timestamp" attributeType="String" syncable="YES"/>
         <relationship name="photos" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="Photo" inverseName="pin" inverseEntity="Photo" syncable="YES"/>
     </entity>
     <elements>
-        <element name="Pin" positionX="-63" positionY="-18" width="128" height="90"/>
-        <element name="Photo" positionX="-54" positionY="0" width="128" height="120"/>
         <element name="Map" positionX="-45" positionY="54" width="128" height="90"/>
+        <element name="Photo" positionX="-54" positionY="0" width="128" height="120"/>
+        <element name="Pin" positionX="-63" positionY="-18" width="128" height="105"/>
     </elements>
 </model>

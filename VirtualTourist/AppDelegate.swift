@@ -9,6 +9,22 @@
 import UIKit
 import CoreData
 
+// logging
+func trace(message: Any...) {
+#if DEBUG
+		print(message)
+#endif
+}
+
+func errorLog(message: Any...) {
+#if DEBUG
+	print(message)
+#else
+	// output log
+#endif
+}
+
+
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 

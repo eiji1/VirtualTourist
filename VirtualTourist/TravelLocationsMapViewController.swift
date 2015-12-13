@@ -10,20 +10,28 @@ import UIKit
 import MapKit
 import CoreData
 
+/**
+TravelLocationsMapViewController controls displaying and operating a map and dropping new pins on the favorite location. This class should manage their instances persistently using Coredata framework.
+*/
 class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognizerDelegate {
 	
+	// consts.
 	let DefaultLocation = CLLocationCoordinate2DMake(35.6897,139.6922)
 	let DefaultRegionSize = 5.0
 	
+	// UI
+	@IBOutlet weak var mapView: MKMapView!
+	var justLongPressStarted: Bool = false  // to enable the drop animation
+	var justUserChangedMap: Bool = false    // to store the map region
+
+	// managed objects
 	var map: Map!
 	var pinArray :[Pin] = [Pin]()
 	
-	@IBOutlet weak var mapView: MKMapView!
-	
+	// core data
 	var coreDataStack: CoreDataStackManager {
 		get { return (UIApplication.sharedApplication().delegate as! AppDelegate).coreDataStackManager }
 	}
-	
 	var managedObjectContext: NSManagedObjectContext {
 		get { return coreDataStack.managedObjectContext }
 	}
@@ -33,10 +41,10 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	
 	override func viewDidLoad() {
 		super.viewDidLoad()
-		
 		self.mapView.delegate = self
 
 		// register gesture recognizers
+		
 		let longTap: UILongPressGestureRecognizer = UILongPressGestureRecognizer(target: self, action: "onLongPressedGesture:")
 		longTap.delegate = self
 		longTap.numberOfTapsRequired = 0
@@ -82,63 +90,119 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 
 	//------------------------------------------------------------------------//
 	// GestureRecognizer related methods
-	
+
 	// long Pressed gesture
 	func onLongPressedGesture(gestureRecognizer: UIGestureRecognizer) {
-		// get the coordinates that was tapped
+		// get the coordinates where was tapped
 		let tapPoint: CGPoint = gestureRecognizer.locationInView(mapView)
 		let coordinate = mapView.convertPoint(tapPoint, toCoordinateFromView: mapView)
 		
+		justLongPressStarted = false
+
+		// event handling
 		if gestureRecognizer.state == UIGestureRecognizerState.Began {
-			// create a new pin
-			let pin = Pin(coordinate: coordinate, context: managedObjectContext)
-			pinArray.append(pin)
+			onLongPressStarted(coordinate)
 		}
 		else if gestureRecognizer.state == UIGestureRecognizerState.Changed {
-			let pin = pinArray.last
-			pin?.coordinate = coordinate
+			onLongPressedAndDragging(coordinate)
 		}
 		else if gestureRecognizer.state == UIGestureRecognizerState.Ended {
-			storeMapObject() // and new Pin will be stored here
-			
-			prefetchImageFromFlickr(pinArray.last!)
+			onLongPressFinished(coordinate)
 		}
 		
-		pinArray.forEach { (pin) -> () in
-			pin.show(mapView)
-		}
+		//prefetchImageFromFlickr(pinArray.last!)
+	}
+	
+	func onLongPressStarted(coordinate: CLLocationCoordinate2D) {
+		// disable the map scroll
+		mapView.scrollEnabled = false
+		justLongPressStarted = true // enables drop animation
+		
+		// create a new pin
+		let newPin = Pin(coordinate: coordinate, context: managedObjectContext)
+		pinArray.append(newPin)
+		
+		newPin.show(mapView)
+	}
+	
+	func onLongPressedAndDragging(coordinate: CLLocationCoordinate2D) {
+		// update the location of the last created pin
+		let pin = pinArray.last
+		pin?.coordinate = coordinate
+		// and show it on the map
+		pin?.show(mapView)
+	}
+	
+	func onLongPressFinished(coordinate: CLLocationCoordinate2D) {
+		// update the location of the pin
+		let pin = pinArray.last
+		pin?.coordinate = coordinate
+		
+		storeMapObjects() // new pin will be stored on user's finger released
+		
+		// show it on the map
+		pin?.show(mapView)
+		
+		// allow map scroll again
+		mapView.scrollEnabled = true
 	}
 	
 	// on the map tapped
 	func onTapGesture(gestureRecognizer: UIGestureRecognizer) {
 		if gestureRecognizer.state == UIGestureRecognizerState.Ended {
-			storeMapObject()
+			justUserChangedMap = true
 		}
 	}
 
 	// on the map dragging
 	func onDragGesture(gestureRecognizer: UIGestureRecognizer) {
 		if gestureRecognizer.state == UIGestureRecognizerState.Ended {
-			storeMapObject()
+			//storeMapObject()
+			justUserChangedMap = true
 		}
 	}
 	
 	// use gesture recongnizers simultaneously
 	func gestureRecognizer(gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWithGestureRecognizer otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-		return true
+		return true // for long press, tap, and pan gestures
 	}
-	
+
 	//------------------------------------------------------------------------//
 	// MapViewDelegate related methods
 	
-	// on the pin selected
+	// when a pin was selected
 	func mapView(mapView: MKMapView, didSelectAnnotationView view: MKAnnotationView) {
 		let selectedPin = view.annotation as! Pin
 		self.performSegueWithIdentifier("showPhotoAlbum", sender: selectedPin)
 	}
 	
+	// on render a pin
+	func mapView(mapView: MKMapView, viewForAnnotation annotation: MKAnnotation) -> MKAnnotationView? {
+		// getting a reusable annotation view
+		let reuseIdentifier = "pinView"
+		var annotationView = mapView.dequeueReusableAnnotationViewWithIdentifier(reuseIdentifier) as? MKPinAnnotationView
+		if annotationView == nil {
+			annotationView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: reuseIdentifier)
+		}
+		else {
+			annotationView!.annotation = annotation
+		}
+		
+		// enables drop animation only on long pressing began
+		annotationView!.animatesDrop = justLongPressStarted
+		return annotationView
+	}
+	
+	// when the region did changed after animating
+	func mapView(mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+		if justUserChangedMap {
+			storeMapObjects() // only when user's changed the map
+			justUserChangedMap = false
+		}
+	}
+	
 	//------------------------------------------------------------------------//
-	// keep objects persistent
+	// keep map and pin objects persistent
 	
 	// fetch Pin objects
 	private func fetchPinObjects() {
@@ -147,7 +211,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 			let results = try managedObjectContext.executeFetchRequest(fetchRequest)
 			pinArray = results as! [Pin]
 		} catch let error as NSError {
-			print("Could not fetch \(error), \(error.userInfo)")
+			errorLog("Could not fetch \(error), \(error.userInfo)")
 		}
 		
 	}
@@ -163,13 +227,14 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 				return
 			}
 		} catch let error as NSError {
-			print("Could not fetch \(error), \(error.userInfo)")
+			errorLog("Could not fetch \(error), \(error.userInfo)")
 		}
 		map = Map(center: DefaultLocation, regionSize: DefaultRegionSize, context: managedObjectContext)
 	}
 	
-	private func storeMapObject() {
-		let regionSize = mapView.region.span.latitudeDelta // same as longitudeDelata
+	private func storeMapObjects() {
+		// updating map location status
+		let regionSize = mapView.region.span.longitudeDelta // rather than latitudeDelata
 		let center = mapView.region.center
 		map.regionSize = regionSize
 		map.center = center
@@ -181,6 +246,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	private func moveTo(center: CLLocationCoordinate2D, regionSize: Double) {
 		let span = MKCoordinateSpanMake(regionSize, regionSize)
 		let region = MKCoordinateRegionMake(center, span)
+		// enables the animation going to the destination
 		let animationOptions : UIViewAnimationOptions = [UIViewAnimationOptions.CurveEaseInOut, UIViewAnimationOptions.AllowUserInteraction, UIViewAnimationOptions.OverrideInheritedDuration]
 		UIView.animateWithDuration(2.5, delay: 0.0, options: animationOptions,
 			animations: {
