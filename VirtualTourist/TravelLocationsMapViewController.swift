@@ -275,13 +275,13 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	func prefetchImageFromFlickr(pin: Pin) {
 		// reusing PhotoAlbumViewController method but do nothing for any view objects
 		let photoAlbumViewController = self.storyboard!.instantiateViewControllerWithIdentifier("PhotoAlbumViewController") as! PhotoAlbumViewController
-		photoAlbumViewController.getImagesFromFlickr(pin, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: {})
+		photoAlbumViewController.getImagesFromFlickr(pin, imageDownloadHandler: onImageDownloaded){}
 	}
 	
 	
-	func onImageDownloaded(photo:Photo, index: Int, allPhotosDownloaded: Bool) {
+	func onImageDownloaded(photoIndex: Int) {
 		// send notification to the photo album view controller
-		let notification : NSNotification = NSNotification(name: "imageDownloadNotification", object: self, userInfo: ["value": index, "downloaded": allPhotosDownloaded])
+		let notification : NSNotification = NSNotification(name: "imageDownloadNotification", object: self, userInfo: ["value": photoIndex])
 		NSNotificationCenter.defaultCenter().postNotification(notification)
 	}
 	

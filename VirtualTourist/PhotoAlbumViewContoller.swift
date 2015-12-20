@@ -35,18 +35,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		get{ return pin?.valueForKeyPath("photos") as! NSMutableOrderedSet }
 	}
 	
-	private var _didAllPhotoDownloaded: Bool? = nil
 	var didAllPhotoDownloaded: Bool {
 		get {
-			if let _ = _didAllPhotoDownloaded {
-				return _didAllPhotoDownloaded!
-			}
-			else {
-				_didAllPhotoDownloaded = Photo.checkAllPhotoDownloaded(pin?.photos)
-				return _didAllPhotoDownloaded!
-			}
+			return Photo.checkAllPhotoDownloaded(pin?.photos)
 		}
-		set(val) { _didAllPhotoDownloaded = val }
 	}
 	
 	// coredata
@@ -64,11 +56,11 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		super.viewDidLoad()
 		self.collectionView.delegate = self;
 		
-		//dispatch_semaphore_signal(semaphore)
-		NSNotificationCenter.defaultCenter().addObserver(self, selector: "onImageDownloaded:", name: "imageDownloadNotification", object: nil)
+		NSNotificationCenter.defaultCenter().addObserver(self, selector: "onDownloadNotified:", name: "imageDownloadNotification", object: nil)
 		
 		newCollectionButton.enabled = false
 	}
+
 	
 	override func viewDidAppear(animated: Bool) {
 		super.viewDidAppear(animated)
@@ -84,9 +76,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		
 		if didAllPhotoDownloaded {
 			newCollectionButton.enabled = true
-		}
-		else {
-			// resume downloading
 		}
 	}
 	
@@ -104,9 +93,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	
 	@IBAction func onNewCollectionButtonPressed(sender: AnyObject) {
 		// reset
-		removeAllPhotosFromAlbum()
 		newCollectionButton.enabled = false
-		didAllPhotoDownloaded = false
+		removeAllPhotosFromAlbum()
 		
 		// new image data set
 		page++
@@ -234,42 +222,24 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 
 	// helper methods
 
-	func onAllImagesDownloaded() {
-		sharedApp.dispatch_async_main {
-			self.newCollectionButton.enabled = true
-		}
-	}
-
-	func onImageDownloaded(photo: Photo, index: Int, allPhotosDownloaded: Bool) {
-		trace("downloaded: \(photo.downloaded)")
-		
+	func onImageDownloaded(photoIndex: Int) {
 		sharedApp.dispatch_async_main {
 			if let collectionView = self.collectionView {
-					self.collectionView.reloadItemsAtIndexPaths([NSIndexPath(forRow: index, inSection: 0)])
-				if allPhotosDownloaded {
+				// reload the corresponding cell
+				self.collectionView.reloadItemsAtIndexPaths([NSIndexPath(forRow: photoIndex, inSection: 0)])
+				if self.didAllPhotoDownloaded {
 					collectionView.reloadData()
+					self.newCollectionButton.enabled = true
 				}
 			}
-		}
-		if allPhotosDownloaded {
-			self.onAllImagesDownloaded()
 		}
 	}
 	
-	func onImageDownloaded(notification: NSNotification)  {
+	func onDownloadNotified(notification: NSNotification)  {
 		if let userInfo = notification.userInfo {
-			let index = userInfo["value"] as! Int
-			let didDownloaded = userInfo["downloaded"] as! Bool
-			sharedApp.dispatch_async_main {
-				if let collectionView = self.collectionView {
-					collectionView.reloadItemsAtIndexPaths([NSIndexPath(forRow: index, inSection: 0)])
-				}
-				if didDownloaded {
-					self.onAllImagesDownloaded()
-				}
-			}
+			let photoIndex = userInfo["value"] as! Int
+			onImageDownloaded(photoIndex)
 		}
-
 	}
 	
 	func onPhotoURLsRetrieved() {
@@ -292,7 +262,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	/// - parameter pin: a pin object which has a location where photos should be searched
 	/// - parameter imageDownloadHandler: a completion handler called on image downloading finished
 	/// - parameter searchFinishedHandler: a completion handler called on the photo search finished
-	func getImagesFromFlickr(pin: Pin, imageDownloadHandler: (photo:Photo, index: Int, allPhotosDownloaded: Bool)->(),
+	func getImagesFromFlickr(pin: Pin, imageDownloadHandler: (photoIndex: Int)->(),
 		searchFinishedHandler: ()->()) {
 		if FlickrClient.sharedInstance().isSearchingImages {
 			trace("searching images now")
@@ -309,8 +279,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 					
 					trace("start downloading an image \(index)")
 					self.downloadImageFromServer(photo) { image in
-						let didAllPhotosDownload = Photo.checkAllPhotoDownloaded(photos)
-						imageDownloadHandler(photo: photo, index: index, allPhotosDownloaded: didAllPhotosDownload)
+						imageDownloadHandler(photoIndex: index)
 					}
 				}
 			}
