@@ -17,7 +17,7 @@ class PhotoCollectionViewCell: UICollectionViewCell {
 	@IBOutlet weak var imageView: UIImageView!
 
 	let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
-	var indicator: UIActivityIndicatorView!
+	var indicator: UIActivityIndicatorView?
 	
 	override init(frame: CGRect) {
 		super.init(frame: frame)
@@ -27,22 +27,29 @@ class PhotoCollectionViewCell: UICollectionViewCell {
 		super.init(coder: aDecoder)!
 	}
 	
+	/// start displaying an indicator before dowloading images starts
 	func startLoadingAnimation() {
 		if indicator == nil {
 			indicator = createIndicator(targetView: imageView)
 			
 		}
-		self.sharedApp.dispatch_async_main {
-			self.indicator.startAnimating()
+		sharedApp.dispatch_async_main {
+			self.indicator?.startAnimating()
 		}
 	}
 	
+	/// stop displaying an indicator when dowloading images is completed
 	func stopLoadingAnimation() {
-		self.sharedApp.dispatch_async_main {
-			self.indicator.stopAnimating()
+		if let indicator = self.indicator {
+			if indicator.isAnimating() {
+				sharedApp.dispatch_async_main {
+					self.indicator?.stopAnimating()
+				}
+			}
 		}
 	}
 	
+	/// create an indicator
 	private func createIndicator(targetView view: UIView) -> UIActivityIndicatorView {
 		// create a new indicator
 		let indicator = UIActivityIndicatorView(activityIndicatorStyle: UIActivityIndicatorViewStyle.WhiteLarge)

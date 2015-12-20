@@ -11,10 +11,17 @@ import CoreData
 import UIKit // shared app
 
 public class Photo : NSManagedObject {
+	
+	enum Status : Int16 {
+		case NotRetrieved = 0
+		case Downloading = 1
+		case Downloaded = 2
+	}
+	
 	@NSManaged var url: String
 	@NSManaged var identifier: String
 	@NSManaged var path: String
-	@NSManaged var downloaded: Bool
+	@NSManaged var downloaded: Int16
 	@NSManaged var pin: Pin?
 	
 	override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {
@@ -25,7 +32,7 @@ public class Photo : NSManagedObject {
 		let entity =  NSEntityDescription.entityForName("Photo", inManagedObjectContext: context)!
 		super.init(entity: entity, insertIntoManagedObjectContext: context)
 		url = dictionary[FlickrClient.JSONResponseKeys.Url] as! String
-		downloaded = false
+		downloaded = Status.NotRetrieved.rawValue
 		identifier = ""
 		path = ""
 	}
@@ -42,11 +49,23 @@ public class Photo : NSManagedObject {
 		return photos
 	}
 	
-	static func checkAllPhotoDownloaded(photos: [Photo]) -> Bool {
-		var isDownloaded = true
-		for photo in photos {
-			isDownloaded = isDownloaded && photo.downloaded
+	static func checkAllPhotoDownloaded(photos: [Photo]?) -> Bool {
+		if let _ = photos {
+			var isDownloaded = true
+			for photo in photos! {
+				isDownloaded = isDownloaded && (photo.downloaded == Status.Downloaded.rawValue)
+			}
+			return isDownloaded
 		}
-		return isDownloaded
+		return false
+	}
+	
+	static func toPhotoArray(photoSet: NSMutableOrderedSet) -> [Photo] {
+		var photoArray: [Photo] = []
+		for elem in photoSet {
+			let photo = elem as! Photo
+			photoArray.append(photo)
+		}
+		return photoArray
 	}
 }

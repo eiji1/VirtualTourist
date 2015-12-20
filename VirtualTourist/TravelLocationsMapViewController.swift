@@ -45,7 +45,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	override func viewDidLoad() {
 		super.viewDidLoad()
 		self.mapView.delegate = self
-
+		
 		// register gesture recognizers
 		
 		let longTap: UILongPressGestureRecognizer = UILongPressGestureRecognizer(target: self, action: "onLongPressedGesture:")
@@ -152,7 +152,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		// allow map scroll again
 		mapView.scrollEnabled = true
 		
-		//prefetchImageFromFlickr(pin!)
+		prefetchImageFromFlickr(pin!)
 	}
 	
 	// on the map tapped
@@ -259,7 +259,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		coreDataStack.saveContext()
 	}
 	
-	// go to the specified location
+	/// move to the specified location on the map
 	private func moveTo(center: CLLocationCoordinate2D, regionSize: Double) {
 		let span = MKCoordinateSpanMake(regionSize, regionSize)
 		let region = MKCoordinateRegionMake(center, span)
@@ -273,7 +273,16 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	}
 	
 	func prefetchImageFromFlickr(pin: Pin) {
+		// reusing PhotoAlbumViewController method but do nothing for any view objects
 		let photoAlbumViewController = self.storyboard!.instantiateViewControllerWithIdentifier("PhotoAlbumViewController") as! PhotoAlbumViewController
-		photoAlbumViewController.getImagesFromFlickr(pin) {}
+		photoAlbumViewController.getImagesFromFlickr(pin, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: {})
 	}
+	
+	
+	func onImageDownloaded(photo:Photo, index: Int, allPhotosDownloaded: Bool) {
+		// send notification to the photo album view controller
+		let notification : NSNotification = NSNotification(name: "imageDownloadNotification", object: self, userInfo: ["value": index, "downloaded": allPhotosDownloaded])
+		NSNotificationCenter.defaultCenter().postNotification(notification)
+	}
+	
 }

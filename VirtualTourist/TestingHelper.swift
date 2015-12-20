@@ -12,7 +12,7 @@ import CoreLocation
 public class TestingHelper {
 
 	public class func getImages(coordinate: CLLocationCoordinate2D, handler: (photos: [Photo], total: Int, success: Bool) -> ()) {
-		FlickrClient().getImagesBySearch(coordinate, page:1, handler: handler)
+		FlickrClient.sharedInstance().getImagesBySearch(coordinate, page:1, handler: handler)
 	}
 	
 }

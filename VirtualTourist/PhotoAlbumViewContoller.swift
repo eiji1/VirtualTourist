@@ -17,8 +17,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 
 	// flickr related parameters
 	var page = 1
-	var isDownloadingPhotos: Bool = false
-	
+
 	// helper classes
 	var imageStorage: ImageStorage = ImageStorage()
 	var imageDownloader: ImageDownloader = ImageDownloader()
@@ -36,6 +35,20 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		get{ return pin?.valueForKeyPath("photos") as! NSMutableOrderedSet }
 	}
 	
+	private var _didAllPhotoDownloaded: Bool? = nil
+	var didAllPhotoDownloaded: Bool {
+		get {
+			if let _ = _didAllPhotoDownloaded {
+				return _didAllPhotoDownloaded!
+			}
+			else {
+				_didAllPhotoDownloaded = Photo.checkAllPhotoDownloaded(pin?.photos)
+				return _didAllPhotoDownloaded!
+			}
+		}
+		set(val) { _didAllPhotoDownloaded = val }
+	}
+	
 	// coredata
 	var coreDataStack: CoreDataStackManager {
 		get { return sharedApp.coreDataStackManager }
@@ -50,6 +63,11 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	override func viewDidLoad() {
 		super.viewDidLoad()
 		self.collectionView.delegate = self;
+		
+		//dispatch_semaphore_signal(semaphore)
+		NSNotificationCenter.defaultCenter().addObserver(self, selector: "onImageDownloaded:", name: "imageDownloadNotification", object: nil)
+		
+		newCollectionButton.enabled = false
 	}
 	
 	override func viewDidAppear(animated: Bool) {
@@ -59,19 +77,22 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		fetchPhotoObjects()
 		
 		// no photo is downloaded
-		if photos.count == 0 && !isDownloadingPhotos {
-			newCollectionButton.enabled = false
-			getImagesFromFlickr(pin) {
-				self.sharedApp.dispatch_async_main {
-					self.collectionView.reloadData()
-				}
-			}
+		if photos.count == 0 {
+			getImagesFromFlickr(pin, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: onPhotoURLsRetrieved)
+		}
+		collectionView.reloadData()
+		
+		if didAllPhotoDownloaded {
+			newCollectionButton.enabled = true
+		}
+		else {
+			// resume downloading
 		}
 	}
 	
 	override func viewWillAppear(animated: Bool) {
 		super.viewWillAppear(animated)
-		collectionView.reloadData()
+		
 	}
 	
 	//------------------------------------------------------------------------//
@@ -82,19 +103,18 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	}
 	
 	@IBAction func onNewCollectionButtonPressed(sender: AnyObject) {
+		// reset
 		removeAllPhotosFromAlbum()
+		newCollectionButton.enabled = false
+		didAllPhotoDownloaded = false
 		
 		// new image data set
 		page++
-		newCollectionButton.enabled = false
-		getImagesFromFlickr(pin) { // again
-			self.sharedApp.dispatch_async_main {
-				self.collectionView.reloadData()
-			}
-		}
+		getImagesFromFlickr(pin, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: onPhotoURLsRetrieved)
+		
 	}
 
-	/// show a map
+	/// show a currently selected pin on the map
 	private func showMap() {
 		if let map = pin.map {
 			let regionSize = map.regionSize
@@ -109,7 +129,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	//------------------------------------------------------------------------//
 	// helper methods for managed objects
 	
-	// fetch Pin objects
+	/// fetch Pin objects
 	private func fetchPhotoObjects() {
 		let fetchRequest = NSFetchRequest(entityName: "Photo")
 		do {
@@ -161,6 +181,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	
 	// returns the number of collection view cells
 	func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+		trace(pin.photos.count)
 		return pin.photos.count
 	}
 	
@@ -170,88 +191,37 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		
 		let cell = collectionView.dequeueReusableCellWithReuseIdentifier("PhotoCollectionViewCell", forIndexPath: indexPath) as! PhotoCollectionViewCell
 		cell.userInteractionEnabled = true
-		
-		// show the placeholder on downloading an image
-		cell.imageView.image = UIImage(named: "VirtualTourist_76")
-		cell.startLoadingAnimation()
-		
-		if isDownloadingPhotos {
-			trace("retrieving photos from flickr")
-			return cell
-		}
 
+		
 		let photo = photos.objectAtIndex(rowIndex) as! Photo
 		trace("url: \(photo.url)")
 		trace("id: \(photo.identifier)")
+		trace("downloaded: \(photo.downloaded)")
 		trace("retrieving image \(rowIndex)")
 		
-		if photo.downloaded {
+		if photo.downloaded == Photo.Status.Downloaded.rawValue {
 			if let image = imageStorage.getImage(photo.identifier) {
 				print("from storage: index:\(rowIndex), photo id:\(photo.identifier)")
 				cell.imageView.image = image
+				
 				cell.stopLoadingAnimation()
 				return cell
 			}
 		}
+		else {
+			// show the placeholder on downloading an image
+			cell.imageView.image = UIImage(named: "VirtualTourist_76")
+			cell.startLoadingAnimation()
+		}
 
-		/*
-		// get image from the storage (memory or file system)
-		let gotImage = getImageFromStorage(photo) { image in
-			cell.imageView.image = image
-			cell.stopLoadingAnimation()
-		}
-		if gotImage {
-			return cell
-		}
-		*/
-		
-		
-		trace("start downloading an image \(rowIndex)")
-		
-		downloadImageFromServer(photo) { image in
-			// update the image view in the cell and the new collection button
-			self.sharedApp.dispatch_async_main {
-				cell.imageView.image = image
-				if Photo.checkAllPhotoDownloaded(self.pin.photos) {
-					self.newCollectionButton.enabled = true
-				}
-			}
-			cell.stopLoadingAnimation()
-		}
-		
-		/*
-		imageDownloader.downloadImageAsync(photo.url) { (image, success) -> () in
-			if let _ = image {
-				print("finished downloading the image \(indexPath.row)")
-				
-				// save the downloaded image data
-				self.imageStorage.storeImage(image, identifier: photo.identifier)
-				photo.path = self.imageStorage.createFileURL(photo.identifier)
-				photo.downloaded = true
-				
-				self.coreDataStack.saveContext()
-				
-				// update the image view in the cell and the new collection button
-				self.sharedApp.dispatch_async_main {
-					cell.imageView.image = image
-					if Photo.checkAllPhotoDownloaded(self.pin.photos) {
-						self.newCollectionButton.enabled = true
-					}
-				}
-				
-				cell.stopLoadingAnimation()
-			}
-		}
-		*/
-		
 		return cell
 	}
 	
 	// on selecting a collection view cell
 	func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath:NSIndexPath)
 	{
-		// check all images have been downloaded
-		if !Photo.checkAllPhotoDownloaded(pin.photos) {
+		// do nothing until the downloading ends.
+		if !didAllPhotoDownloaded {
 			return
 		}
 		
@@ -261,38 +231,106 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		removePhotosFromAlbum(photo)
 		collectionView.deleteItemsAtIndexPaths([indexPath])
 	}
-	
+
 	// helper methods
-	
-	func getImagesFromFlickr(pin: Pin, handler: () -> ()) {
-		isDownloadingPhotos = true
-		FlickrClient().getImagesBySearch(pin.coordinate, page: page) { photos, total , success in
-			if success {
-				trace("getting images from Flikcr!")
-				
-				for (index, photo) in photos.enumerate() {
-					photo.pin = pin // set relationship
-					photo.identifier = "\(pin.identifier)_\(index)" // creating an identifier by index
+
+	func onAllImagesDownloaded() {
+		sharedApp.dispatch_async_main {
+			self.newCollectionButton.enabled = true
+		}
+	}
+
+	func onImageDownloaded(photo: Photo, index: Int, allPhotosDownloaded: Bool) {
+		trace("downloaded: \(photo.downloaded)")
+		
+		sharedApp.dispatch_async_main {
+			if let collectionView = self.collectionView {
+					self.collectionView.reloadItemsAtIndexPaths([NSIndexPath(forRow: index, inSection: 0)])
+				if allPhotosDownloaded {
+					collectionView.reloadData()
 				}
-				
-				self.isDownloadingPhotos = false
-				handler()
+			}
+		}
+		if allPhotosDownloaded {
+			self.onAllImagesDownloaded()
+		}
+	}
+	
+	func onImageDownloaded(notification: NSNotification)  {
+		if let userInfo = notification.userInfo {
+			let index = userInfo["value"] as! Int
+			let didDownloaded = userInfo["downloaded"] as! Bool
+			sharedApp.dispatch_async_main {
+				if let collectionView = self.collectionView {
+					collectionView.reloadItemsAtIndexPaths([NSIndexPath(forRow: index, inSection: 0)])
+				}
+				if didDownloaded {
+					self.onAllImagesDownloaded()
+				}
+			}
+		}
+
+	}
+	
+	func onPhotoURLsRetrieved() {
+		sharedApp.dispatch_async_main {
+			if let collectionView = self.collectionView {
+				collectionView.reloadData()
 			}
 		}
 	}
 	
-	func downloadImageFromServer(photo: Photo, handler: (image: UIImage?) -> ()) {
+	/// Download images using Flickr photo search web API. This method runs following processes.
+	/// 1. Search photos using Flickr API specified with location and get their images' URL strings
+	///
+	///    Call searchFinishedHandler when photo search is completed.
+	/// 2. Download their image data from the URLs
+	///
+	///    Call imageDownloadHandler when each image download is completed.
+	///
+	/// - returns: None
+	/// - parameter pin: a pin object which has a location where photos should be searched
+	/// - parameter imageDownloadHandler: a completion handler called on image downloading finished
+	/// - parameter searchFinishedHandler: a completion handler called on the photo search finished
+	func getImagesFromFlickr(pin: Pin, imageDownloadHandler: (photo:Photo, index: Int, allPhotosDownloaded: Bool)->(),
+		searchFinishedHandler: ()->()) {
+		if FlickrClient.sharedInstance().isSearchingImages {
+			trace("searching images now")
+			return
+		}
+		
+		// search image urls from Flickr
+		FlickrClient.sharedInstance().getImagesBySearch(pin.coordinate, page: page) { photos, total , success in
+			if success {
+				trace("got images from Flikcr!")
+				for (index, photo) in photos.enumerate() {
+					photo.pin = pin // set relationship
+					photo.identifier = "\(pin.identifier)_\(index)" // creating an identifier by index
+					
+					trace("start downloading an image \(index)")
+					self.downloadImageFromServer(photo) { image in
+						let didAllPhotosDownload = Photo.checkAllPhotoDownloaded(photos)
+						imageDownloadHandler(photo: photo, index: index, allPhotosDownloaded: didAllPhotosDownload)
+					}
+				}
+			}
+			searchFinishedHandler()
+		}
+	}
+	
+	/// download image data from specified Url
+	private func downloadImageFromServer(photo: Photo, completionHandler: (image: UIImage?) -> ()) {
 		imageDownloader.downloadImageAsync(photo.url) { (image, success) -> () in
 			if let _ = image {
 				trace("finished downloading the image: photo id:\(photo.identifier)")
 				// save the downloaded data
 				self.imageStorage.storeImage(image, identifier: photo.identifier)
 				photo.path = self.imageStorage.createFileURL(photo.identifier)
-				photo.downloaded = true
+				photo.downloaded = Photo.Status.Downloaded.rawValue
 				
 				self.coreDataStack.saveContext()
 				
-				handler(image: image)
+				completionHandler(image: image)
 			}
 		}
 	}

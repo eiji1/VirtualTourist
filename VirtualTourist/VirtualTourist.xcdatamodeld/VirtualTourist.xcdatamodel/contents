@@ -7,7 +7,7 @@
         <relationship name="pins" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="Pin" inverseName="map" inverseEntity="Pin" syncable="YES"/>
     </entity>
     <entity name="Photo" representedClassName=".Photo" syncable="YES">
-        <attribute name="downloaded" attributeType="Boolean" syncable="YES"/>
+        <attribute name="downloaded" attributeType="Integer 16" syncable="YES"/>
         <attribute name="identifier" attributeType="String" syncable="YES"/>
         <attribute name="path" attributeType="String" syncable="YES"/>
         <attribute name="url" attributeType="String" syncable="YES"/>

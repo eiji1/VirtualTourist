@@ -14,7 +14,25 @@ import CoreLocation
 */
 class FlickrClient{
 	
+	// make this instance as singleton
+	private init(){}
+	
+	class func sharedInstance() -> FlickrClient {
+		struct Singleton {
+			static let instance = FlickrClient()
+		}
+		return Singleton.instance
+	}
+	
 	private let httpClient = WebClient()
+	
+	// status
+	private var _isSearchingImages: Bool = false
+	
+	var isSearchingImages: Bool {
+		get { return _isSearchingImages }
+		set(val) { _isSearchingImages = val }
+	}
 	
 	// constants
 	
@@ -52,13 +70,14 @@ class FlickrClient{
 		static let Url = "url_m"
 	}
 	
-
 	/// Retrieve images from Flickr photo search API
 	/// - returns: None (using completion handler)
 	/// - parameter coordinates: a place where photos are taken
 	/// - parameter page: a number identifying the set of photo groups
 	/// - parameter handler: completion handler
 	func getImagesBySearch(coordinates: CLLocationCoordinate2D, page: Int, handler: (photos: [Photo], total: Int, success: Bool) -> ()) {
+		
+		isSearchingImages = true
 		
 		let arguments : WebClient.JSONBody = [
 			ParameterKeys.Method: FlickrClient.Method,
@@ -80,11 +99,13 @@ class FlickrClient{
 			if !success {
 				// error
 				errorLog("Sending Http request has failed")
+				self.isSearchingImages = false
 				handler(photos: [Photo](), total: 0, success: false)
 				return
 			}
 			
 			let photos = self.parseResult(result)
+			self.isSearchingImages = false
 			handler(photos: photos, total: 0, success: true)
 		}
 	}
