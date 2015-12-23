@@ -19,6 +19,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	var page = 1
 
 	// helper classes
+	
 	var imageStorage: ImageStorage = ImageStorage()
 	var imageDownloader: ImageDownloader = ImageDownloader()
 	let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
@@ -94,7 +95,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	@IBAction func onNewCollectionButtonPressed(sender: AnyObject) {
 		// reset
 		newCollectionButton.enabled = false
-		removeAllPhotosFromAlbum()
+		removeAllPhotosFromAlbum(photos)
 		
 		// new image data set
 		page++
@@ -138,15 +139,15 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		
 	}
 	
-	private func removeAllPhotosFromAlbum() {
-		photos.forEach({ (photo) -> () in
+	private func removeAllPhotosFromAlbum(photoSet: NSMutableOrderedSet) {
+		photoSet.forEach({ (photo) -> () in
 			// delete an image from cache and an underlying file from the Documents directory
 			imageStorage.removeImage((photo as! Photo).identifier)
 			// remove photo as managed object from core data stack
 			managedObjectContext.deleteObject(photo as! NSManagedObject)
 		})
 		// delete all elements from local array
-		photos.removeAllObjects()
+		photoSet.removeAllObjects()
 		
 		coreDataStack.saveContext()
 	}
