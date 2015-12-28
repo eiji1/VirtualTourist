@@ -1,6 +1,0 @@
-version: "Apple Swift version 2.1 (swiftlang-700.1.101.6 clang-700.1.76)"
-options: "976715ee6598063a516e924ef9f04908"
-build_time: [501607602, 35782000]
-inputs:
-  "/Users/user/mooc/udacity/nanodegree/ios_developer/p4_ios_persistence_and_core_data/project4/VirtualTourist/VirtualTourist/ViewController.swift": [501607598, 0]
-  "/Users/user/mooc/udacity/nanodegree/ios_developer/p4_ios_persistence_and_core_data/project4/VirtualTourist/VirtualTourist/AppDelegate.swift": [501607598, 0]
