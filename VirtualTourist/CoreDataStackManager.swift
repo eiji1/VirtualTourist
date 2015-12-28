@@ -38,9 +38,9 @@ class CoreDataStackManager {
 			dict[NSUnderlyingErrorKey] = error as NSError
 			let wrappedError = NSError(domain: "YOUR_ERROR_DOMAIN", code: 9999, userInfo: dict)
 			NSLog("Unresolved error \(wrappedError), \(wrappedError.userInfo)")
-//#if DEBUG
+#if DEBUG
 			abort() // for debugging
-//#endif
+#endif
 		}
 		
 		return persistentStoreCoordinator
@@ -60,9 +60,9 @@ class CoreDataStackManager {
 			} catch {
 				let nserror = error as NSError
 				NSLog("Unresolved error \(nserror), \(nserror.userInfo)")
-//#if DEBUG
+#if DEBUG
 				abort() // for debugging
-//#endif
+#endif
 			}
 			})
 		}
