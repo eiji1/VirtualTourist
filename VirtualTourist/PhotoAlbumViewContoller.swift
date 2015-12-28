@@ -36,15 +36,15 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	/// A selected pin before transition
 	var pin :Pin!
 
-	/// Check all pictures has been downloaded (some pictures might not be downloaded)
-	var didAllPhotoDownloaded: Bool {
+	/// Check all image downloads are finished (some downloads might be failed or timeout because of network issues)
+	var allPhotoDownloadsFinished: Bool {
 		get {
 			return Photo.checkAllPhotoDownloaded(pin?.photos, isIncludeFailures: true)
 		}
 	}
 	
 	/// Check all pictures has been successfully downloaded
-	var didAllPhotoSuccessfullyDownloaded: Bool {
+	var allPhotoDownloadsSuccessfullyFinished: Bool {
 		get {
 			return Photo.checkAllPhotoDownloaded(pin?.photos)
 		}
@@ -105,7 +105,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		
 		// update UIs
 		collectionView.reloadData()
-		if didAllPhotoDownloaded {
+		if allPhotoDownloadsFinished {
 			newCollectionButton.enabled = true
 		}
 	}
@@ -248,7 +248,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	{
 		// Do nothing until the downloading ends.
 		// But after finished the downloads, the app should be able to delete any cells.
-		if !didAllPhotoDownloaded {
+		if !allPhotoDownloadsFinished {
 			return
 		}
 		
@@ -268,7 +268,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		
 		// if some download results are failed, pin status should not be updated,
 		// so that their downloads could restarts after launching the app next time.
-		if didAllPhotoSuccessfullyDownloaded {
+		if allPhotoDownloadsSuccessfullyFinished {
 			pin.allPhotoDownloaded = true
 			coreDataStack.saveContext()
 		}
@@ -281,7 +281,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 					self.collectionView.reloadItemsAtIndexPaths([NSIndexPath(forRow: photoIndex, inSection: 0)])
 				}
 				// After finished the downloads, the app should enables new collection button anyway.
-				if self.didAllPhotoDownloaded {
+				if self.allPhotoDownloadsFinished {
 					self.collectionView.reloadData()
 					self.newCollectionButton.enabled = true
 				}

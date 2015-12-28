@@ -27,7 +27,7 @@ class Pin: NSManagedObject, MKAnnotation {
 	@NSManaged var photos: [Photo]
 	/// A map object in which this pin is included
 	@NSManaged var map: Map?
-	/// True: if all photos has been downloaded, False otherwise
+	/// true: if all photos are successfully downloaded, false otherwise
 	@NSManaged var allPhotoDownloaded: Bool
 	
 	/// Where this pin is located
