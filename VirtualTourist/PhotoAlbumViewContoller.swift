@@ -13,8 +13,8 @@ import CoreData
 /**
 PhotoAlbumViewController shows a photo album associated with the selected pin's location. The photo images are downloaded from Flickr's photo search API and should be displayed on offline. The photo images can be removed by selecting cells in the collection view. This class should handle the photo objects persistently.
 */
-class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate {
-
+class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, NSFetchedResultsControllerDelegate
+{
 	// flickr related parameters
 	var page = 1
 
@@ -32,10 +32,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	// managed objects
 	var pin :Pin!
 	
-	var photos: NSMutableOrderedSet {
-		get{ return pin?.valueForKeyPath("photos") as! NSMutableOrderedSet }
-	}
-	
 	var didAllPhotoDownloaded: Bool {
 		get {
 			return Photo.checkAllPhotoDownloaded(pin?.photos)
@@ -43,38 +39,61 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	}
 	
 	// coredata
+	
+	/// the core data stack manager instance
 	var coreDataStack: CoreDataStackManager {
 		get { return sharedApp.coreDataStackManager }
 	}
+	
+	/// the managed object context instance
 	var managedObjectContext: NSManagedObjectContext {
 		get { return coreDataStack.managedObjectContext }
 	}
+	
+	lazy var fetchedResultsController: NSFetchedResultsController = {
+		
+		let fetchRequest = NSFetchRequest(entityName: "Photo")
+		
+		fetchRequest.sortDescriptors = [NSSortDescriptor(key: "identifier", ascending: true)]
+		fetchRequest.predicate = NSPredicate(format: "pin == %@", self.pin);
+		
+		let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
+			managedObjectContext: self.managedObjectContext,
+			sectionNameKeyPath: nil,
+			cacheName: nil)
+		
+		return fetchedResultsController
+	}()
 	
 	//------------------------------------------------------------------------//
 	// UIViewController related methods
 	
 	override func viewDidLoad() {
 		super.viewDidLoad()
-		self.collectionView.delegate = self;
 		
-		NSNotificationCenter.defaultCenter().addObserver(self, selector: "onDownloadNotified:", name: "imageDownloadNotification", object: nil)
-		
+		// setting up UIs
+		collectionView.delegate = self;
 		newCollectionButton.enabled = false
-	}
+		
+		// setting up notifications for image downloads
+		NSNotificationCenter.defaultCenter().addObserver(self, selector: "onDownloadNotified:", name: "imageDownloadNotification", object: nil)
 
+		// fetch photo managed objects
+		do {
+			try fetchedResultsController.performFetch()
+		} catch {}
+		
+		fetchedResultsController.delegate = self
+	}
 	
 	override func viewDidAppear(animated: Bool) {
 		super.viewDidAppear(animated)
 		
+		// render a map
 		showMap()
-		fetchPhotoObjects()
 		
-		// no photo is downloaded
-		if photos.count == 0 {
-			getImagesFromFlickr(pin, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: onPhotoURLsRetrieved)
-		}
+		// update UIs
 		collectionView.reloadData()
-		
 		if didAllPhotoDownloaded {
 			newCollectionButton.enabled = true
 		}
@@ -82,7 +101,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	
 	override func viewWillAppear(animated: Bool) {
 		super.viewWillAppear(animated)
-		
 	}
 	
 	//------------------------------------------------------------------------//
@@ -93,11 +111,11 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	}
 	
 	@IBAction func onNewCollectionButtonPressed(sender: AnyObject) {
-		// reset
+		// reset album data
 		newCollectionButton.enabled = false
-		removeAllPhotosFromAlbum(photos)
+		removeAllPhotosFromAlbum()
 		
-		// new image data set
+		// download new image data set
 		page++
 		getImagesFromFlickr(pin, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: onPhotoURLsRetrieved)
 		
@@ -111,7 +129,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 			let region = MKCoordinateRegionMake(pin.coordinate, span)
 			mapView.setRegion(region, animated: false);
 		}
-		
 		pin.show(mapView)
 	}
 	
@@ -119,6 +136,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	// helper methods for managed objects
 	
 	/// fetch Pin objects
+	/*
 	private func fetchPhotoObjects() {
 		let fetchRequest = NSFetchRequest(entityName: "Photo")
 		do {
@@ -137,32 +155,61 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 			errorLog("Could not fetch \(error), \(error.userInfo)")
 		}
 		
-	}
+	}*/
 	
-	private func removeAllPhotosFromAlbum(photoSet: NSMutableOrderedSet) {
-		photoSet.forEach({ (photo) -> () in
-			// delete an image from cache and an underlying file from the Documents directory
-			imageStorage.removeImage((photo as! Photo).identifier)
-			// remove photo as managed object from core data stack
-			managedObjectContext.deleteObject(photo as! NSManagedObject)
-		})
+	private func removeAllPhotosFromAlbum() {
 		// delete all elements from local array
-		photoSet.removeAllObjects()
-		
-		coreDataStack.saveContext()
+		while fetchedResultsController.sections![0].numberOfObjects > 0 {
+			let photo = fetchedResultsController.objectAtIndexPath(NSIndexPath(forRow: 0, inSection: 0)) as! Photo
+			photo.remove(coreDataStack)
+			collectionView.deleteItemsAtIndexPaths([NSIndexPath(forRow: 0, inSection: 0)])
+		}
 	}
 	
-	private func removePhotosFromAlbum(photo:Photo) {
-		// delete an image from cache and an underlying file from the Documents directory
-		imageStorage.removeImage(photo.identifier)
-		
-		// remove photo as managed object from core data stack
-		managedObjectContext.deleteObject(photo)
-		
-		// remove photo from the local array
-		photos.removeObject(photo)
-		
-		coreDataStack.saveContext()
+	//------------------------------------------------------------------------//
+	// NSFetchedResultsControllerDelegate methods
+	
+	/// on start changing managed objects
+	func controllerWillChangeContent(controller: NSFetchedResultsController) {
+		trace("start to change photo objcts")
+	}
+	
+	/// when a section is changed
+	func controller(controller: NSFetchedResultsController,
+		didChangeSection sectionInfo: NSFetchedResultsSectionInfo,
+		atIndex sectionIndex: Int,
+		forChangeType type: NSFetchedResultsChangeType) {
+		// do nothing
+	}
+	
+	/// when a managed object is changed
+	func controller(controller: NSFetchedResultsController,
+		didChangeObject anObject: AnyObject,
+		atIndexPath indexPath: NSIndexPath?,
+		forChangeType type: NSFetchedResultsChangeType,
+		newIndexPath: NSIndexPath?) {
+			switch type {
+			case .Insert: break
+			case .Delete:
+				let photo = anObject as! Photo
+				// automatically delete underlying files
+				photo.removeImageFiles()
+				pin.checkCoredata()
+				break
+			case .Update:
+				let index = indexPath!.row
+				sharedApp.dispatch_async_main() {
+					self.collectionView.reloadItemsAtIndexPaths([NSIndexPath(forRow: index, inSection: 0)])
+				}
+				pin.checkCoredata()
+				break
+			default: break
+			}
+	}
+	
+	/// at the end of changing managed objects
+	func controllerDidChangeContent(controller: NSFetchedResultsController) {
+		trace("end changing photo objcts")
 	}
 	
 	//------------------------------------------------------------------------//
@@ -170,27 +217,21 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	
 	// returns the number of collection view cells
 	func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-		trace(pin.photos.count)
-		return pin.photos.count
+		let sectionInfo = self.fetchedResultsController.sections![section]
+		// trace(sectionInfo.numberOfObjects)
+		return sectionInfo.numberOfObjects
 	}
 	
 	// render a collection cell specified with indexPath
 	func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
-		let rowIndex = indexPath.row
-		
 		let cell = collectionView.dequeueReusableCellWithReuseIdentifier("PhotoCollectionViewCell", forIndexPath: indexPath) as! PhotoCollectionViewCell
 		cell.userInteractionEnabled = true
 
-		
-		let photo = photos.objectAtIndex(rowIndex) as! Photo
-		trace("url: \(photo.url)")
-		trace("id: \(photo.identifier)")
-		trace("downloaded: \(photo.downloaded)")
-		trace("retrieving image \(rowIndex)")
+		let photo = fetchedResultsController.objectAtIndexPath(indexPath) as! Photo
 		
 		if photo.downloaded == Photo.Status.Downloaded.rawValue {
+			// set image from the storage and stop the downloading animation
 			if let image = imageStorage.getImage(photo.identifier) {
-				print("from storage: index:\(rowIndex), photo id:\(photo.identifier)")
 				cell.imageView.image = image
 				
 				cell.stopLoadingAnimation()
@@ -214,22 +255,21 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 			return
 		}
 		
-		let rowIndex = indexPath.row
-		let photo = photos.objectAtIndex(rowIndex) as! Photo
+		let photo = fetchedResultsController.objectAtIndexPath(indexPath) as! Photo
+		photo.remove(coreDataStack)
 		
-		removePhotosFromAlbum(photo)
 		collectionView.deleteItemsAtIndexPaths([indexPath])
 	}
 
 	// helper methods
 
-	func onImageDownloaded(photoIndex: Int) {
+	private func onImageDownloaded(photoIndex: Int) {
 		sharedApp.dispatch_async_main {
-			if let collectionView = self.collectionView {
+			if let _ = self.collectionView {
 				// reload the corresponding cell
 				self.collectionView.reloadItemsAtIndexPaths([NSIndexPath(forRow: photoIndex, inSection: 0)])
 				if self.didAllPhotoDownloaded {
-					collectionView.reloadData()
+					self.collectionView.reloadData()
 					self.newCollectionButton.enabled = true
 				}
 			}
@@ -243,7 +283,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		}
 	}
 	
-	func onPhotoURLsRetrieved() {
+	private func onPhotoURLsRetrieved() {
 		sharedApp.dispatch_async_main {
 			if let collectionView = self.collectionView {
 				collectionView.reloadData()
@@ -271,10 +311,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		}
 		
 		// search image urls from Flickr
-		FlickrClient.sharedInstance().getImagesBySearch(pin.coordinate, page: page) { photos, total , success in
+		FlickrClient.sharedInstance().getImagesBySearch(pin.coordinate, page: page) { _photos, total , success in
 			if success {
 				trace("got images from Flikcr!")
-				for (index, photo) in photos.enumerate() {
+				for (index, photo) in _photos.enumerate() {
 					photo.pin = pin // set relationship
 					photo.identifier = "\(pin.identifier)_\(index)" // creating an identifier by index
 					

@@ -48,5 +48,25 @@ class Pin: NSManagedObject, MKAnnotation {
 		mapView.removeAnnotation(self)
 		mapView.addAnnotation(self)
 	}
+	
+	func remove(coreDataStack: CoreDataStackManager) {
+		// delete photos
+		let photoSet = self.valueForKeyPath("photos") as! NSMutableOrderedSet
+		while photoSet.count > 0 {
+			let photo = photoSet.objectAtIndex(0) as! Photo
+			photo.removeImageFiles()
+			photo.remove(coreDataStack)
+		}
+		// delete pin
+		coreDataStack.managedObjectContext.deleteObject(self)
+		coreDataStack.saveContext()
+	}
+	
+	func checkCoredata() {
+		print("lon:\(longitude), lat:\(latitude)")
+		for photo in photos {
+			photo.checkCoredata()
+		}
+	}
 }
 

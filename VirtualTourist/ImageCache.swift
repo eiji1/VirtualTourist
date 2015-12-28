@@ -91,6 +91,11 @@ class ImageStorage {
 		} catch _ {}
 	}
 	
+	func imageFileExists(identifier: String) -> Bool {
+		let filePath = createFileURL(identifier)
+		return NSFileManager.defaultManager().fileExistsAtPath(filePath)
+	}
+	
 	func createFileURL(identifier: String) -> String {
 		let documentsDirectoryURL: NSURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask).first!
 		let fullURL = documentsDirectoryURL.URLByAppendingPathComponent(identifier)

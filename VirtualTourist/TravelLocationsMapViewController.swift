@@ -137,7 +137,9 @@ class PinDeleteDelegate : NSObject,  LongPressDelegate {
 /**
 TravelLocationsMapViewController controls displaying and operating a map and dropping new pins on the favorite location. This class should manage their instances persistently using Coredata framework.
 */
-class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognizerDelegate {
+class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognizerDelegate
+, NSFetchedResultsControllerDelegate
+{
 
 	// consts.
 	let DefaultLocation = CLLocationCoordinate2DMake(35.6897,139.6922)
@@ -192,7 +194,22 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	var managedObjectContext: NSManagedObjectContext {
 		get { return coreDataStack.managedObjectContext }
 	}
-
+	
+	lazy var fetchedResultsController: NSFetchedResultsController = {
+		
+		let fetchRequest = NSFetchRequest(entityName: "Pin")
+		
+		fetchRequest.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: true)]
+		fetchRequest.predicate = NSPredicate(format: "map == %@", self.map);
+		
+		let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
+			managedObjectContext: self.managedObjectContext,
+			sectionNameKeyPath: nil,
+			cacheName: nil)
+		
+		return fetchedResultsController
+	}()
+	
 	// long press event handlers
 
 	/// long press handlers that create a new pin
@@ -200,7 +217,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	
 	/// long press handlers that delete pins
 	var deletePinOperation: PinDeleteDelegate!
-
+	
 	//------------------------------------------------------------------------//
 	// UIViewController related methods
 	
@@ -236,6 +253,12 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		// fetch managed objects from the core data DB
 		fetchMapObject()
 		fetchPinObjects()
+		
+		do {
+			try fetchedResultsController.performFetch()
+		} catch {}
+		
+		fetchedResultsController.delegate = self
 	}
 	
 	override func viewWillAppear(animated: Bool) {
@@ -296,7 +319,6 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	/// A handler on drag gesture
 	func onDragGesture(gestureRecognizer: UIGestureRecognizer) {
 		if gestureRecognizer.state == UIGestureRecognizerState.Ended {
-			//storeMapObject()
 			justUserChangedMap = true
 		}
 	}
@@ -305,63 +327,9 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	func gestureRecognizer(gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWithGestureRecognizer otherGestureRecognizer: UIGestureRecognizer) -> Bool {
 		return true // for long press, tap, and pan gestures
 	}
-
-	/// Select multiple pins located in specified region.
-	private func selectPinsInRegion(from from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> [Pin] {
-		var ret = [Pin]()
-		for obj in pins {
-			if let pin = obj as? Pin {
-				let x = pin.coordinate.longitude
-				let y = pin.coordinate.latitude
-				let w = abs(from.longitude - to.longitude)
-				let h = abs(from.latitude - to.latitude)
-				let isIncludeX = (w >= abs(x - from.longitude) + abs(x - to.longitude))
-				let isIncludeY = (h >= abs(y - from.latitude) + abs(y - to.latitude))
-				if isIncludeX && isIncludeY {
-					ret.append(pin)
-				}
-			}
-		}
-		return ret
-	}
-	
-	private func selectNearestPin(coordinate: CLLocationCoordinate2D) -> Pin? {
-		if pins.count == 0 {
-			return nil // no pin found
-		}
-		
-		let queryPos = mapView.convertCoordinate(coordinate, toPointToView: self.view)
-		let thresholdDistance = 20.0 // in pixels
-
-		let getDistance: (CGPoint, CGPoint) -> Double = { (a: CGPoint, b: CGPoint) in
-			let p = Double(a.x - b.x)
-			let q = Double(a.y - b.y)
-			return sqrt(p*p + q*q)
-		}
-		
-		let nearest = [Int](0..<pins.count).reduce((0, DBL_MAX)) { (tuple, index) in
-			let pin = pins.objectAtIndex(index) as! Pin
-			let comparedPos = mapView.convertCoordinate(pin.coordinate, toPointToView: self.view)
-			let dist = getDistance(comparedPos, queryPos)
-			if dist < tuple.1 {
-				return (index, dist)
-			}
-			return tuple
-		}
-		
-		let nearestIndex = nearest.0
-		let nearestDistance = nearest.1
-		
-		if nearestDistance > thresholdDistance {
-			return nil // not found pins in close
-		}
-		
-		let nearestPin = pins.objectAtIndex(nearestIndex) as! Pin
-		return nearestPin
-	}
 	
 	//------------------------------------------------------------------------//
-	// MapViewDelegate related methods
+	// MapViewDelegate methods
 	
 	/// When a pin was selected
 	func mapView(mapView: MKMapView, didSelectAnnotationView view: MKAnnotationView) {
@@ -406,7 +374,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		return polygonView
 	}
 	
-	// map operation helper methods
+	// map operation helpers
 	
 	/// Move to the specified location
 	private func moveTo(center: CLLocationCoordinate2D, regionSize: Double) {
@@ -421,8 +389,63 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 			}, completion: nil)
 	}
 	
+	
+	/// Select multiple pins located in specified region.
+	private func selectPinsInRegion(from from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> [Pin] {
+		var ret = [Pin]()
+		for obj in pins {
+			if let pin = obj as? Pin {
+				let x = pin.coordinate.longitude
+				let y = pin.coordinate.latitude
+				let w = abs(from.longitude - to.longitude)
+				let h = abs(from.latitude - to.latitude)
+				let isIncludeX = (w >= abs(x - from.longitude) + abs(x - to.longitude))
+				let isIncludeY = (h >= abs(y - from.latitude) + abs(y - to.latitude))
+				if isIncludeX && isIncludeY {
+					ret.append(pin)
+				}
+			}
+		}
+		return ret
+	}
+	
+	private func selectNearestPin(coordinate: CLLocationCoordinate2D) -> Pin? {
+		if pins.count == 0 {
+			return nil // no pin found
+		}
+		
+		let queryPos = mapView.convertCoordinate(coordinate, toPointToView: self.view)
+		let thresholdDistance = 20.0 // in pixels
+		
+		let getDistance: (CGPoint, CGPoint) -> Double = { (a: CGPoint, b: CGPoint) in
+			let p = Double(a.x - b.x)
+			let q = Double(a.y - b.y)
+			return sqrt(p*p + q*q)
+		}
+		
+		let nearest = [Int](0..<pins.count).reduce((0, DBL_MAX)) { (tuple, index) in
+			let pin = pins.objectAtIndex(index) as! Pin
+			let comparedPos = mapView.convertCoordinate(pin.coordinate, toPointToView: self.view)
+			let dist = getDistance(comparedPos, queryPos)
+			if dist < tuple.1 {
+				return (index, dist)
+			}
+			return tuple
+		}
+		
+		let nearestIndex = nearest.0
+		let nearestDistance = nearest.1
+		
+		if nearestDistance > thresholdDistance {
+			return nil // not found pins in close area
+		}
+		
+		let nearestPin = pins.objectAtIndex(nearestIndex) as! Pin
+		return nearestPin
+	}
+	
 	//------------------------------------------------------------------------//
-	// core data and managed objects related
+	// core data and managed objects related methods
 	
 	// Fetch Pin objects from core data stack.
 	private func fetchPinObjects() {
@@ -475,25 +498,45 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	/// Delete a pin and its photo objects persisitently
 	private func deletePin(pin: Pin) {
 		mapView.removeAnnotation(pin)
-		
-		// remove photos
-		let photos = pin.valueForKeyPath("photos") as! NSMutableOrderedSet
-		photos.forEach({ (photo) -> () in
-			ImageStorage().removeImage((photo as! Photo).identifier)
-			managedObjectContext.deleteObject(photo as! NSManagedObject)
-		})
-		photos.removeAllObjects()
-		
-		// remove pin as managed object from core data stack
-		managedObjectContext.deleteObject(pin)
-		
+		pin.remove(coreDataStack)
 		// remove pin from the local array
 		pins.removeObject(pin)
-		
-		coreDataStack.saveContext()
 	}
 	
-
+	//------------------------------------------------------------------------//
+	// NSFetchedResultsControllerDelegate methods
+	
+	func controllerWillChangeContent(controller: NSFetchedResultsController) {
+		trace("start to change pin objcts")
+	}
+	
+	func controller(controller: NSFetchedResultsController,
+		didChangeObject anObject: AnyObject,
+		atIndexPath indexPath: NSIndexPath?,
+		forChangeType type: NSFetchedResultsChangeType,
+		newIndexPath: NSIndexPath?) {
+			switch type {
+			case .Insert:
+				let newIndex = newIndexPath!.row
+				let pin = anObject as! Pin
+				trace("pin inserted: new index:\(newIndex), coordinate:\(pin.coordinate)")
+				break
+			case .Delete:
+				let index = indexPath!.row
+				let pin = anObject as! Pin
+				trace("pin deleted: new index:\(index), coordinate:\(pin.coordinate)")
+				break
+			default: break
+			}
+	}
+	
+	func controllerDidChangeContent(controller: NSFetchedResultsController) {
+		trace("end changing pin objcts")
+	}
+	
+	//------------------------------------------------------------------------//
+	// image prefetch helpers
+	
 	/// Prefetch image data from Flickr photo search API. This function starts when user's finger is lift off the map and the new location is decided.
 	private func prefetchImageFromFlickr(pin: Pin) {
 		// reusing PhotoAlbumViewController method but do nothing for any view objects

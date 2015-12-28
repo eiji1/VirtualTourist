@@ -37,6 +37,24 @@ public class Photo : NSManagedObject {
 		path = ""
 	}
 
+	func remove(coreDataStack: CoreDataStackManager) {
+		// delete an image from cache and an underlying file from the Documents directory
+		//ImageStorage().removeImage(identifier)
+		trace("photo managed object removed:\(ImageStorage().createFileURL(identifier))")
+		// remove photo managed object from core data stack
+		coreDataStack.managedObjectContext.deleteObject(self)
+		coreDataStack.saveContext()
+	}
+	
+	func removeImageFiles() {
+		let imageStorage = ImageStorage()
+		if imageStorage.imageFileExists(identifier) {
+			// delete an image from cache and an underlying file from the Documents directory
+			imageStorage.removeImage(identifier)
+			trace("image file deleted:\(imageStorage.createFileURL(identifier))")
+		}
+	}
+	
 	static func getPhotoFromResults(results: [[String : AnyObject]]) -> [Photo] {
 		
 		let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
@@ -67,5 +85,9 @@ public class Photo : NSManagedObject {
 			photoArray.append(photo)
 		}
 		return photoArray
+	}
+	
+	func checkCoredata() {
+		print("id:\(identifier), dl:\(downloaded), url:\(url)")
 	}
 }

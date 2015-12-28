@@ -49,13 +49,15 @@ class CoreDataStackManager {
 	
 	func saveContext () {
 		if managedObjectContext.hasChanges {
+			managedObjectContext.performBlockAndWait({
 			do {
-				try managedObjectContext.save()
+				try self.managedObjectContext.save()
 			} catch {
 				let nserror = error as NSError
 				NSLog("Unresolved error \(nserror), \(nserror.userInfo)")
 				abort() // for debugging
 			}
+			})
 		}
 	}
 
