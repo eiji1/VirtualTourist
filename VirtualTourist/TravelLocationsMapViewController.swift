@@ -9,10 +9,9 @@
 import UIKit
 import MapKit
 import CoreData
-import Darwin // dbl max
 
 /**
-LongPressDelegate class defines 3 handlers on starting the long press gesture, on finger lifting and releasing a finger from the map.
+LongPressDelegate class defines handlers on starting the long press gesture, on finger dragging and released a finger from the map.
 */
 protocol LongPressDelegate {
 	func onLongPressStarted(coordinate: CLLocationCoordinate2D)
@@ -24,9 +23,12 @@ protocol LongPressDelegate {
 PinCreateDelegate class controls pin creation operations using long press gestures.
 */
 class PinCreateDelegate : NSObject,  LongPressDelegate {
+	/// Context class
 	var ctx: TravelLocationsMapViewController!
+	/// Whether logn press gesture is just started or not
 	var justStarted :Bool = false
 	
+	/// ctor.
 	init(context: TravelLocationsMapViewController) {
 		self.ctx = context
 	}
@@ -87,13 +89,16 @@ class PinCreateDelegate : NSObject,  LongPressDelegate {
 PinDeleteDelegate class controls pin deletion operations using long press gestures.
 */
 class PinDeleteDelegate : NSObject,  LongPressDelegate {
+	/// Context class
 	var ctx: TravelLocationsMapViewController!
+	/// Long pressed coordinate
 	var startPos: CLLocationCoordinate2D!
+	/// polygon overlay
 	var polygon: MKPolygon!
 	
+	/// ctor.
 	init(context: TravelLocationsMapViewController) {
 		self.ctx = context
-		
 	}
 	
 	/// Store the start position
@@ -138,14 +143,16 @@ class PinDeleteDelegate : NSObject,  LongPressDelegate {
 TravelLocationsMapViewController controls displaying and operating a map and dropping new pins on the favorite location. This class should manage their instances persistently using Coredata framework.
 */
 class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognizerDelegate
-, NSFetchedResultsControllerDelegate
 {
-
 	// consts.
+	
+	/// the first location
 	let DefaultLocation = CLLocationCoordinate2DMake(35.6897,139.6922)
+	/// the first region
 	let DefaultRegionSize = 5.0
 	
 	// UI
+	
 	@IBOutlet weak var mapView: MKMapView!
 	/// Top view becomes visible when the edit button is pressed.
 	@IBOutlet weak var topView: UIView!
@@ -195,21 +202,6 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		get { return coreDataStack.managedObjectContext }
 	}
 	
-	lazy var fetchedResultsController: NSFetchedResultsController = {
-		
-		let fetchRequest = NSFetchRequest(entityName: "Pin")
-		
-		fetchRequest.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: true)]
-		fetchRequest.predicate = NSPredicate(format: "map == %@", self.map);
-		
-		let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
-			managedObjectContext: self.managedObjectContext,
-			sectionNameKeyPath: nil,
-			cacheName: nil)
-		
-		return fetchedResultsController
-	}()
-	
 	// long press event handlers
 
 	/// long press handlers that create a new pin
@@ -253,18 +245,8 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		// fetch managed objects from the core data DB
 		fetchMapObject()
 		fetchPinObjects()
-		
-		do {
-			try fetchedResultsController.performFetch()
-		} catch {}
-		
-		fetchedResultsController.delegate = self
 	}
-	
-	override func viewWillAppear(animated: Bool) {
-		super.viewWillAppear(animated)
-	}
-	
+
 	override func viewDidAppear(animated: Bool) {
 		super.viewWillAppear(animated)
 		// go to the previous location
@@ -409,45 +391,10 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		return ret
 	}
 	
-	private func selectNearestPin(coordinate: CLLocationCoordinate2D) -> Pin? {
-		if pins.count == 0 {
-			return nil // no pin found
-		}
-		
-		let queryPos = mapView.convertCoordinate(coordinate, toPointToView: self.view)
-		let thresholdDistance = 20.0 // in pixels
-		
-		let getDistance: (CGPoint, CGPoint) -> Double = { (a: CGPoint, b: CGPoint) in
-			let p = Double(a.x - b.x)
-			let q = Double(a.y - b.y)
-			return sqrt(p*p + q*q)
-		}
-		
-		let nearest = [Int](0..<pins.count).reduce((0, DBL_MAX)) { (tuple, index) in
-			let pin = pins.objectAtIndex(index) as! Pin
-			let comparedPos = mapView.convertCoordinate(pin.coordinate, toPointToView: self.view)
-			let dist = getDistance(comparedPos, queryPos)
-			if dist < tuple.1 {
-				return (index, dist)
-			}
-			return tuple
-		}
-		
-		let nearestIndex = nearest.0
-		let nearestDistance = nearest.1
-		
-		if nearestDistance > thresholdDistance {
-			return nil // not found pins in close area
-		}
-		
-		let nearestPin = pins.objectAtIndex(nearestIndex) as! Pin
-		return nearestPin
-	}
-	
 	//------------------------------------------------------------------------//
 	// core data and managed objects related methods
 	
-	// Fetch Pin objects from core data stack.
+	/// Fetch pin objects from core data stack.
 	private func fetchPinObjects() {
 		let fetchRequest = NSFetchRequest(entityName: "Pin")
 		do {
@@ -467,7 +414,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		
 	}
 	
-	// Fetch map object from core data stack.
+	/// Fetch map object from core data stack.
 	private func fetchMapObject() {
 		let fetchRequest = NSFetchRequest(entityName: "Map")
 		do {
@@ -504,44 +451,13 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	}
 	
 	//------------------------------------------------------------------------//
-	// NSFetchedResultsControllerDelegate methods
-	
-	func controllerWillChangeContent(controller: NSFetchedResultsController) {
-		trace("start to change pin objcts")
-	}
-	
-	func controller(controller: NSFetchedResultsController,
-		didChangeObject anObject: AnyObject,
-		atIndexPath indexPath: NSIndexPath?,
-		forChangeType type: NSFetchedResultsChangeType,
-		newIndexPath: NSIndexPath?) {
-			switch type {
-			case .Insert:
-				let newIndex = newIndexPath!.row
-				let pin = anObject as! Pin
-				trace("pin inserted: new index:\(newIndex), coordinate:\(pin.coordinate)")
-				break
-			case .Delete:
-				let index = indexPath!.row
-				let pin = anObject as! Pin
-				trace("pin deleted: new index:\(index), coordinate:\(pin.coordinate)")
-				break
-			default: break
-			}
-	}
-	
-	func controllerDidChangeContent(controller: NSFetchedResultsController) {
-		trace("end changing pin objcts")
-	}
-	
-	//------------------------------------------------------------------------//
 	// image prefetch helpers
 	
 	/// Prefetch image data from Flickr photo search API. This function starts when user's finger is lift off the map and the new location is decided.
 	private func prefetchImageFromFlickr(pin: Pin) {
 		// reusing PhotoAlbumViewController method but do nothing for any view objects
 		let photoAlbumViewController = self.storyboard!.instantiateViewControllerWithIdentifier("PhotoAlbumViewController") as! PhotoAlbumViewController
-		photoAlbumViewController.getImagesFromFlickr(pin, imageDownloadHandler: onImageDownloaded){}
+		photoAlbumViewController.getImagesFromFlickr(pin, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: { success in /* do nothing */ } )
 	}
 	
 	/// Notifying the completion of image downloads to the PhotoAlbumViewController

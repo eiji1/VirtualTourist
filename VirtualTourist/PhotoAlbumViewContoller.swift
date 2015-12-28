@@ -16,6 +16,8 @@ PhotoAlbumViewController shows a photo album associated with the selected pin's 
 class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, NSFetchedResultsControllerDelegate
 {
 	// flickr related parameters
+	
+	/// A parameter specifing a group of photo data
 	var page = 1
 
 	// helper classes
@@ -30,8 +32,11 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	@IBOutlet weak var newCollectionButton: UIButton!
 	
 	// managed objects
-	var pin :Pin!
 	
+	/// A selected pin before transition
+	var pin :Pin!
+
+	/// Check all pictures has been downloaded and stored to the storage
 	var didAllPhotoDownloaded: Bool {
 		get {
 			return Photo.checkAllPhotoDownloaded(pin?.photos)
@@ -50,10 +55,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		get { return coreDataStack.managedObjectContext }
 	}
 	
+	/// fethced result controller for photo objects
 	lazy var fetchedResultsController: NSFetchedResultsController = {
-		
 		let fetchRequest = NSFetchRequest(entityName: "Photo")
-		
+		// associated
 		fetchRequest.sortDescriptors = [NSSortDescriptor(key: "identifier", ascending: true)]
 		fetchRequest.predicate = NSPredicate(format: "pin == %@", self.pin);
 		
@@ -99,10 +104,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		}
 	}
 	
-	override func viewWillAppear(animated: Bool) {
-		super.viewWillAppear(animated)
-	}
-	
 	//------------------------------------------------------------------------//
 	// UI actions
 	
@@ -115,8 +116,9 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		newCollectionButton.enabled = false
 		removeAllPhotosFromAlbum()
 		
-		// download new image data set
+		// new image set
 		page++
+		// download new images and replace current photos with them
 		getImagesFromFlickr(pin, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: onPhotoURLsRetrieved)
 		
 	}
@@ -135,28 +137,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	//------------------------------------------------------------------------//
 	// helper methods for managed objects
 	
-	/// fetch Pin objects
-	/*
-	private func fetchPhotoObjects() {
-		let fetchRequest = NSFetchRequest(entityName: "Photo")
-		do {
-			let results = try managedObjectContext.executeFetchRequest(fetchRequest)
-			let filteredPhotos = (results as! [Photo]).filter({ (photo) -> Bool in
-				return photo.pin == self.pin
-			})
-			
-			filteredPhotos.forEach({ (photo) -> () in
-				photos.addObject(photo)
-			})
-			
-			print(photos)
-			
-		} catch let error as NSError {
-			errorLog("Could not fetch \(error), \(error.userInfo)")
-		}
-		
-	}*/
-	
+	/// Delete all pictures associated with selected pin object
 	private func removeAllPhotosFromAlbum() {
 		// delete all elements from local array
 		while fetchedResultsController.sections![0].numberOfObjects > 0 {
@@ -169,7 +150,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	//------------------------------------------------------------------------//
 	// NSFetchedResultsControllerDelegate methods
 	
-	/// on start changing managed objects
+	/// on start to change managed objects
 	func controllerWillChangeContent(controller: NSFetchedResultsController) {
 		trace("start to change photo objcts")
 	}
@@ -218,7 +199,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	// returns the number of collection view cells
 	func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
 		let sectionInfo = self.fetchedResultsController.sections![section]
-		// trace(sectionInfo.numberOfObjects)
+		trace(sectionInfo.numberOfObjects)
 		return sectionInfo.numberOfObjects
 	}
 	
@@ -230,7 +211,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		let photo = fetchedResultsController.objectAtIndexPath(indexPath) as! Photo
 		
 		if photo.downloaded == Photo.Status.Downloaded.rawValue {
-			// set image from the storage and stop the downloading animation
+			// display an image in the storage, new download is not necessary
 			if let image = imageStorage.getImage(photo.identifier) {
 				cell.imageView.image = image
 				
@@ -263,6 +244,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 
 	// helper methods
 
+	/// download completion handler
 	private func onImageDownloaded(photoIndex: Int) {
 		sharedApp.dispatch_async_main {
 			if let _ = self.collectionView {
@@ -276,6 +258,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		}
 	}
 	
+	/// A selector notifying download completion (not defined as private method)
 	func onDownloadNotified(notification: NSNotification)  {
 		if let userInfo = notification.userInfo {
 			let photoIndex = userInfo["value"] as! Int
@@ -283,10 +266,13 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		}
 	}
 	
-	private func onPhotoURLsRetrieved() {
-		sharedApp.dispatch_async_main {
-			if let collectionView = self.collectionView {
-				collectionView.reloadData()
+	/// This handler is called when Photo urls are successfully retrieved from Flickr.
+	private func onPhotoURLsRetrieved(success: Bool) {
+		if success {
+			sharedApp.dispatch_async_main {
+				if let collectionView = self.collectionView {
+					collectionView.reloadData()
+				}
 			}
 		}
 	}
@@ -304,7 +290,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	/// - parameter imageDownloadHandler: a completion handler called on image downloading finished
 	/// - parameter searchFinishedHandler: a completion handler called on the photo search finished
 	func getImagesFromFlickr(pin: Pin, imageDownloadHandler: (photoIndex: Int)->(),
-		searchFinishedHandler: ()->()) {
+		searchFinishedHandler: (success: Bool)->()) {
 		if FlickrClient.sharedInstance().isSearchingImages {
 			trace("searching images now")
 			return
@@ -315,7 +301,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 			if success {
 				trace("got images from Flikcr!")
 				for (index, photo) in _photos.enumerate() {
-					photo.pin = pin // set relationship
+					photo.pin = pin // set an inverse relationship
 					photo.identifier = "\(pin.identifier)_\(index)" // creating an identifier by index
 					
 					trace("start downloading an image \(index)")
@@ -324,7 +310,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 					}
 				}
 			}
-			searchFinishedHandler()
+			searchFinishedHandler(success: success)
 		}
 	}
 	
@@ -333,7 +319,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		imageDownloader.downloadImageAsync(photo.url) { (image, success) -> () in
 			if let _ = image {
 				trace("finished downloading the image: photo id:\(photo.identifier)")
-				// save the downloaded data
+				// save the downloaded data to the image storage
 				self.imageStorage.storeImage(image, identifier: photo.identifier)
 				photo.path = self.imageStorage.createFileURL(photo.identifier)
 				photo.downloaded = Photo.Status.Downloaded.rawValue
