@@ -18,7 +18,8 @@ class Pin: NSManagedObject, MKAnnotation {
 	@NSManaged var timestamp: String
 	@NSManaged var photos: [Photo]
 	@NSManaged var map: Map?
-
+	@NSManaged var allPhotoDownloaded: Bool
+	
 	var coordinate: CLLocationCoordinate2D {
 		get { return CLLocationCoordinate2DMake(latitude, longitude) }
 		set(newCoordinate) {
@@ -42,6 +43,7 @@ class Pin: NSManagedObject, MKAnnotation {
 		self.coordinate = coordinate
 		// to identifying this object uniquely
 		self.timestamp = "\(NSDate().timeIntervalSince1970 * 1000)"
+		allPhotoDownloaded = false
 	}
 
 	func show(mapView: MKMapView) {
@@ -51,7 +53,7 @@ class Pin: NSManagedObject, MKAnnotation {
 	
 	func remove(coreDataStack: CoreDataStackManager) {
 		// delete photos
-		let photoSet = self.valueForKeyPath("photos") as! NSMutableOrderedSet
+		let photoSet = valueForKeyPath("photos") as! NSMutableOrderedSet
 		while photoSet.count > 0 {
 			let photo = photoSet.objectAtIndex(0) as! Photo
 			photo.removeImageFiles()

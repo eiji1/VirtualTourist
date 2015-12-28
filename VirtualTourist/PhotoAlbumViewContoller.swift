@@ -138,6 +138,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	
 	/// Delete all pictures associated with selected pin object
 	private func removeAllPhotosFromAlbum() {
+		pin.allPhotoDownloaded = false
+		
 		// delete all elements from local array
 		while fetchedResultsController.sections![0].numberOfObjects > 0 {
 			let photo = fetchedResultsController.objectAtIndexPath(NSIndexPath(forRow: 0, inSection: 0)) as! Photo
@@ -252,6 +254,11 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 
 	/// download completion handler
 	private func onImageDownloaded(photoIndex: Int) {
+		if didAllPhotoDownloaded {
+			pin.allPhotoDownloaded = true
+			coreDataStack.saveContext()
+		}
+		
 		sharedApp.dispatch_async_main {
 			if let _ = self.collectionView {
 				// reload the corresponding cell

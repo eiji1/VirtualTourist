@@ -245,6 +245,8 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		// fetch managed objects from the core data DB
 		fetchMapObject()
 		fetchPinObjects()
+		
+		resumeDownloadingImages()
 	}
 
 	override func viewDidAppear(animated: Bool) {
@@ -451,7 +453,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	}
 	
 	//------------------------------------------------------------------------//
-	// image prefetch helpers
+	// prefetching image data helpers
 	
 	/// Prefetch image data from Flickr photo search API. This function starts when user's finger is lift off the map and the new location is decided.
 	private func prefetchImageFromFlickr(pin: Pin) {
@@ -466,5 +468,112 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		let notification : NSNotification = NSNotification(name: "imageDownloadNotification", object: self, userInfo: ["value": photoIndex])
 		NSNotificationCenter.defaultCenter().postNotification(notification)
 	}
+	/*
+	asynchronous downloading mechanism
 	
+	[TravelLocationsMapViewController]  [PhotoAlbumViewContoller]
+				|                                  |
+				|start downloading images          |
+				|                                  |
+				|  image1 image2  ...              |
+				|    |      |                      |
+				|    |      |                      |
+				|    |      |   notification       |
+				|    | --------------------------> |onDownloadNotified:
+				|           |     notification     | photo1 = downloaded, check all photos downloaded
+				|           |--------------------> |onDownloadNotified:
+				|                                  | photo2 = downloaded, check all photos downloaded
+	*/
+
+	/*
+	resume downloading mechanism
+	
+	[TravelLocationsMapViewController]  [PhotoAlbumViewContoller]
+				|                                  |
+				|start downloading images          |
+				|all photo = downloading           |
+				|                                  |
+				|  image1 image2  ...              |
+				|    |      |                      |
+				|    |      |                      |
+				|    |      |   notification       |
+				|    | --------------------------> |onDownloadNotified:
+				|           |                      | photo1 = downloaded or download failed
+		======================= terminate app here =====================
+				|                                  |
+				|viewDidLoad --> resume downloading images
+				|for all downloading or download failed photos,
+				|restart downlading
+				|  image2  ...                     |
+				|    |                             |
+				|    |                             |
+				|    |         notification        |
+				|    |-------------------------->  |onDownloadNotified:
+				|                                  | photo2 = downloaded or download failed
+	*/
+
+	
+	private func resumeDownloadingImages() {
+		// search pins whose photos are not completely downloaded
+		let unpreparedPins = pins.filter { (obj) -> Bool in
+			let pin = obj as! Pin
+			// fix allPhotoDownloaded flag
+			if !pin.allPhotoDownloaded {
+				// check actually downloaded or not
+				if Photo.checkAllPhotoDownloaded(pin.photos) {
+					pin.allPhotoDownloaded = true
+					coreDataStack.saveContext()
+				}
+			}
+			return !pin.allPhotoDownloaded
+		}
+		
+		// search photos not completely downloaded
+		let unpreparedPhotos = unpreparedPins.reduce([Photo]()) { (var photos, elem) -> [Photo] in
+			let pin = elem as! Pin
+			// pin.checkCoredata()
+			let allPhotoSet = pin.valueForKeyPath("photos") as! NSMutableOrderedSet
+			let nondownloadedPhotos = allPhotoSet.reduce([Photo](), combine: { (var ret, elem) -> [Photo] in
+				let photo = elem as! Photo
+				if (photo.downloaded == Photo.Status.DownladFailed.rawValue ||
+					photo.downloaded == Photo.Status.Downloading.rawValue) {
+					ret.append(photo)
+				}
+				return ret
+			})
+			photos += nondownloadedPhotos
+			return photos
+		}
+		
+		// resume downloading images
+		unpreparedPhotos.forEach { (photo) -> () in
+			trace("resume downloading the image: photo id:\(photo.identifier)")
+			let pin = photo.pin!
+			
+			ImageDownloader().downloadImageAsync(photo.url) { image, success in
+				if success {
+					if let _ = image {
+						trace("finished downloading the image: photo id:\(photo.identifier)")
+						ImageStorage().storeImage(image, identifier: photo.identifier)
+						photo.path = ImageStorage().createFileURL(photo.identifier)
+						photo.downloaded = Photo.Status.Downloaded.rawValue
+					}
+					else {
+						photo.downloaded = Photo.Status.DownladFailed.rawValue
+					}
+				}
+				else {
+					photo.downloaded = Photo.Status.DownladFailed.rawValue
+				}
+				
+				// check all photos are downloaded
+				if Photo.checkAllPhotoDownloaded(pin.photos) {
+					pin.allPhotoDownloaded = true
+				}
+				
+				self.coreDataStack.saveContext()
+			}
+		}
+		
+	}
 }
