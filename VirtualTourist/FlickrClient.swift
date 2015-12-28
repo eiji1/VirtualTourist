@@ -14,25 +14,19 @@ import CoreLocation
 */
 class FlickrClient{
 	
-	// make this instance as singleton
+	// private ctor. (make this instance as singleton)
 	private init(){}
 	
+	/// singleton
 	class func sharedInstance() -> FlickrClient {
 		struct Singleton {
 			static let instance = FlickrClient()
 		}
 		return Singleton.instance
 	}
-	
+
+	/// web client instance
 	private let httpClient = WebClient()
-	
-	// status
-	private var _isSearchingImages: Bool = false
-	
-	var isSearchingImages: Bool {
-		get { return _isSearchingImages }
-		set(val) { _isSearchingImages = val }
-	}
 	
 	// constants
 	
@@ -77,8 +71,6 @@ class FlickrClient{
 	/// - parameter handler: completion handler
 	func getImagesBySearch(coordinates: CLLocationCoordinate2D, page: Int, handler: (photos: [Photo], total: Int, success: Bool) -> ()) {
 		
-		isSearchingImages = true
-		
 		let arguments : WebClient.JSONBody = [
 			ParameterKeys.Method: FlickrClient.Method,
 			ParameterKeys.ApiKey: FlickrClient.ApiKey,
@@ -99,13 +91,11 @@ class FlickrClient{
 			if !success {
 				// error
 				errorLog("Sending Http request has failed")
-				self.isSearchingImages = false
 				handler(photos: [Photo](), total: 0, success: false)
 				return
 			}
 			
 			let photos = self.parseResult(result)
-			self.isSearchingImages = false
 			handler(photos: photos, total: 0, success: true)
 		}
 	}
@@ -133,29 +123,4 @@ class FlickrClient{
 		errorLog("JSON parse error")
 		return photos
 	}
-	
-	/// Download images from specified URL
-	/// - returns: None (use completion handler)
-	/// - parameter photo: a photo object with a target URL
-	/// - parameter handler: completion handler
-	func downloadPhotoImage(photo: Photo, handler:(imageData: NSData?, success: Bool)->()) {
-		let imageURL = NSURL(string: photo.url)
-		if let imageData = NSData(contentsOfURL: imageURL!) {
-			handler(imageData: imageData, success: true)
-		} else {
-			errorLog("Image does not exist at \(imageURL)")
-			handler(imageData: nil, success: false)
-		}
-	}
-	
-	/// Asynchronously download images from specified URL
-	/// - returns: None (use completion handler)
-	/// - parameter photo: a photo object with a target URL
-	/// - parameter handler: completion handler
-	func downloadPhotoImageAsync(photo: Photo, handler:(imageData: NSData?, success: Bool)->()) {
-		dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), {
-			self.downloadPhotoImage(photo, handler: handler)
-		})
-	}
-	
 }

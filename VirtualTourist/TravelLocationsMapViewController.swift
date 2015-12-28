@@ -512,7 +512,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 				|                                  | photo2 = downloaded or download failed
 	*/
 
-	
+	/// resume downloading images
 	private func resumeDownloadingImages() {
 		// search pins whose photos are not completely downloaded
 		let unpreparedPins = pins.filter { (obj) -> Bool in

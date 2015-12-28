@@ -10,8 +10,12 @@ import Foundation
 import CoreData
 import UIKit // shared app
 
+/**
+Photo class represents pictures in a photo album associated with a specified location. Photo objects should be persistent.
+*/
 public class Photo : NSManagedObject {
 	
+	/// Downloading status definitions
 	enum Status : Int16 {
 		case NotRetrieved = 0
 		case Downloading = 1
@@ -19,16 +23,23 @@ public class Photo : NSManagedObject {
 		case DownladFailed = 3
 	}
 	
+	/// A url where image data is stored
 	@NSManaged var url: String
+	/// An identifier string for photo objects
 	@NSManaged var identifier: String
+	/// A file path where image data is stored offline
 	@NSManaged var path: String
+	/// Downloading status
 	@NSManaged var downloaded: Int16
+	/// A pin object which this photo is associated with
 	@NSManaged var pin: Pin?
 	
+	/// ctor.
 	override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {
 		super.init(entity: entity, insertIntoManagedObjectContext: context)
 	}
 	
+	/// ctor.
 	init(dictionary: [String : AnyObject], context: NSManagedObjectContext) {
 		let entity =  NSEntityDescription.entityForName("Photo", inManagedObjectContext: context)!
 		super.init(entity: entity, insertIntoManagedObjectContext: context)
@@ -38,6 +49,7 @@ public class Photo : NSManagedObject {
 		path = ""
 	}
 
+	/// Remove photo object persistently
 	func remove(coreDataStack: CoreDataStackManager) {
 		// delete an image from cache and an underlying file from the Documents directory
 		//ImageStorage().removeImage(identifier)
@@ -47,6 +59,7 @@ public class Photo : NSManagedObject {
 		coreDataStack.saveContext()
 	}
 	
+	/// Remove image files from the local storage
 	func removeImageFiles() {
 		let imageStorage = ImageStorage()
 		if imageStorage.imageFileExists(identifier) {
@@ -56,6 +69,7 @@ public class Photo : NSManagedObject {
 		}
 	}
 	
+	/// Convert Json result to Photo object array
 	static func getPhotoFromResults(results: [[String : AnyObject]]) -> [Photo] {
 		
 		let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
@@ -68,6 +82,7 @@ public class Photo : NSManagedObject {
 		return photos
 	}
 	
+	/// Check specified photos are completely downloaded
 	static func checkAllPhotoDownloaded(photos: [Photo]?) -> Bool {
 		if let _ = photos {
 			var isDownloaded = true
@@ -79,15 +94,7 @@ public class Photo : NSManagedObject {
 		return false
 	}
 	
-	static func toPhotoArray(photoSet: NSMutableOrderedSet) -> [Photo] {
-		var photoArray: [Photo] = []
-		for elem in photoSet {
-			let photo = elem as! Photo
-			photoArray.append(photo)
-		}
-		return photoArray
-	}
-	
+	// for debugging
 	func checkCoredata() {
 		print("id:\(identifier), dl:\(downloaded), url:\(url)")
 	}

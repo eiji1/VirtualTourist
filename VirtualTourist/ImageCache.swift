@@ -7,10 +7,18 @@
 //
 import UIKit
 
+/**
+Image storage class offers memory caching and file saving mechanism for specified image data.
+*/
 class ImageStorage {
 	
+	/// memory cache object
 	private var cache = NSCache()
 	
+	/// Get image data
+	///
+	/// - returns: image data (UIImage)
+	/// - parameter identifier: a photo identifier string (part of the file path)
 	func getImage(identifier: String?) -> UIImage? {
 		
 		// checking invalid inputs
@@ -36,6 +44,11 @@ class ImageStorage {
 		return nil
 	}
 	
+	/// Store image data to memory cache and file system
+	///
+	/// - returns: None
+	/// - parameter image: a image data to be stored
+	/// - parameter identifier: a photo identifier string (part of the file path)
 	func storeImage(image: UIImage?, identifier: String) {
 		// store data to memory
 		let cacheUrl = createCacheURL(identifier)
@@ -46,37 +59,68 @@ class ImageStorage {
 		storeImageToFileSystem(image, path: fileUrl)
 	}
 	
+	/// Delete image data from memory cache and file system
+	///
+	/// - returns: None
+	/// - parameter identifier: a photo identifier string (part of the file path)
 	func removeImage(identifier: String) {
 		storeImage(nil, identifier: identifier)
 	}
 	
-	func getImageFromMemory(path: String) -> UIImage? {
+	/// Check an image file exits with specified identifier
+	///
+	/// - returns: Whether specified file exists or not
+	/// - parameter identifier: a photo identifier string (part of the file path)
+	func imageFileExists(identifier: String) -> Bool {
+		let filePath = createFileURL(identifier)
+		return NSFileManager.defaultManager().fileExistsAtPath(filePath)
+	}
+	
+	/// Create an image file path from a specified identifier
+	///
+	/// - returns: an image file path
+	/// - parameter identifier: a photo identifier string
+	func createFileURL(identifier: String) -> String {
+		let documentsDirectoryURL: NSURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask).first!
+		let fullURL = documentsDirectoryURL.URLByAppendingPathComponent(identifier)
+		return fullURL.path!
+	}
+	
+	/// Create an image cache url string from a specified identifier (TODO: cache URL can be differed from the file URL)
+	///
+	/// - returns: an image cache url
+	/// - parameter identifier: a photo identifier string
+	func createCacheURL(identifier: String) -> String {
+		return createFileURL(identifier)
+	}
+	
+	/// get image data from memory cache
+	private func getImageFromMemory(path: String) -> UIImage? {
 		if let image = cache.objectForKey(path) as? UIImage {
 			return image
 		}
 		return nil
 	}
-	
-	func storeImageToMemory(image: UIImage?, path: String) {
+
+	/// store image data to memory cache
+	private func storeImageToMemory(image: UIImage?, path: String) {
 		if image == nil {
 			removeImageFromMemory(path)
 			return
 		}
 		cache.setObject(image!, forKey: path)
 	}
-	
-	func removeImageFromMemory(path: String) {
-		cache.removeObjectForKey(path)
-	}
-	
-	func getImageFromFileSystem(path: String) -> UIImage? {
+
+	/// get image data from file system
+	private func getImageFromFileSystem(path: String) -> UIImage? {
 		if let data = NSData(contentsOfFile: path) {
 			return UIImage(data: data)
 		}
 		return nil
 	}
 	
-	func storeImageToFileSystem(image: UIImage?, path: String) {
+	/// store image data to the file system
+	private func storeImageToFileSystem(image: UIImage?, path: String) {
 		if image == nil {
 			removeImageFromFileSystem(path)
 			return
@@ -85,26 +129,16 @@ class ImageStorage {
 		data.writeToFile(path, atomically: true)
 	}
 	
-	func removeImageFromFileSystem(path: String) {
+	/// remove image data from memory cache
+	private func removeImageFromMemory(path: String) {
+		cache.removeObjectForKey(path)
+	}
+	
+	/// remove image data from file system
+	private func removeImageFromFileSystem(path: String) {
 		do {
 			try NSFileManager.defaultManager().removeItemAtPath(path)
 		} catch _ {}
-	}
-	
-	func imageFileExists(identifier: String) -> Bool {
-		let filePath = createFileURL(identifier)
-		return NSFileManager.defaultManager().fileExistsAtPath(filePath)
-	}
-	
-	func createFileURL(identifier: String) -> String {
-		let documentsDirectoryURL: NSURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask).first!
-		let fullURL = documentsDirectoryURL.URLByAppendingPathComponent(identifier)
-		return fullURL.path!
-	}
-	
-	// enabling cache URL differed from the file URL
-	func createCacheURL(identifier: String) -> String {
-		return createFileURL(identifier)
 	}
 }
 

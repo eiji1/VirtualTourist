@@ -9,6 +9,9 @@
 import Foundation
 import CoreData
 
+/**
+CoreDataStackManager class has a managed object model and controls managed object context using SQLite data storing system.
+*/
 class CoreDataStackManager {
 	
 	lazy var applicationDocumentsDirectory: NSURL = {

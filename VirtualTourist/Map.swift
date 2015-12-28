@@ -10,14 +10,20 @@ import CoreData
 import CoreLocation
 
 /**
-Map class stores currently displayed region. Application users can start map operations from the previous location whenever they finish this application. The region related values are stored in the additional map entity in the object model.
+Map class stores currently displayed region. Users can start app from the previous location whenever they finish the app. The region related values are stored in the additional map entity in the object model.
 */
 class Map: NSManagedObject {
-	@NSManaged var regionSize :Double
-	@NSManaged var centerLat: Double
-	@NSManaged var centerLon: Double
-	@NSManaged var pins: [Pin] // TODO: Realize customized maps with different but persistent pin objects
 	
+	/// Displaying region size
+	@NSManaged var regionSize :Double
+	/// Center location (latitude)
+	@NSManaged var centerLat: Double
+	/// Center location (longitude)
+	@NSManaged var centerLon: Double
+	/// Created pin objects on this map
+	@NSManaged var pins: [Pin] // TODO: Realize customized maps with different pin objects
+	
+	/// center coordinate
 	var center: CLLocationCoordinate2D {
 		get { return CLLocationCoordinate2DMake(centerLat, centerLon) }
 		set(newCenter) {
@@ -26,10 +32,12 @@ class Map: NSManagedObject {
 		}
 	}
 	
+	/// ctor.
 	override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {
 		super.init(entity: entity, insertIntoManagedObjectContext: context)
 	}
 	
+	/// ctor.
 	init(center: CLLocationCoordinate2D, regionSize: Double, context: NSManagedObjectContext) {
 		let entity =  NSEntityDescription.entityForName("Map", inManagedObjectContext: context)!
 		super.init(entity: entity, insertIntoManagedObjectContext: context)

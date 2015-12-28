@@ -12,14 +12,25 @@ import UIKit
 import MapKit
 import CoreData
 
+/**
+Pin class represents a marker dropped on the map. This Pin object should be persistent data.
+*/
 class Pin: NSManagedObject, MKAnnotation {
+	
+	/// Where this pin is located
 	@NSManaged var longitude: Double
+	/// Where this pin is located
 	@NSManaged var latitude: Double
+	/// When this pin has been created
 	@NSManaged var timestamp: String
+	/// Photo objects associated with this location
 	@NSManaged var photos: [Photo]
+	/// A map object in which this pin is included
 	@NSManaged var map: Map?
+	/// True: if all photos has been downloaded, False otherwise
 	@NSManaged var allPhotoDownloaded: Bool
 	
+	/// Where this pin is located
 	var coordinate: CLLocationCoordinate2D {
 		get { return CLLocationCoordinate2DMake(latitude, longitude) }
 		set(newCoordinate) {
@@ -28,15 +39,18 @@ class Pin: NSManagedObject, MKAnnotation {
 		}
 	}
 	
+	/// An identifier string for this object
 	var identifier : String {
 		return "id_\(latitude)\(longitude)_\(timestamp)"
 		// TODO: Hashing this string is better.
 	}
 	
+	/// ctor.
 	override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {
 		super.init(entity: entity, insertIntoManagedObjectContext: context)
 	}
 	
+	/// ctor.
 	init(coordinate: CLLocationCoordinate2D, context: NSManagedObjectContext) {
 		let entity =  NSEntityDescription.entityForName("Pin", inManagedObjectContext: context)!
 		super.init(entity: entity, insertIntoManagedObjectContext: context)
@@ -64,6 +78,7 @@ class Pin: NSManagedObject, MKAnnotation {
 		coreDataStack.saveContext()
 	}
 	
+	// for debugging
 	func checkCoredata() {
 		print("lon:\(longitude), lat:\(latitude)")
 		for photo in photos {

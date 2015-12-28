@@ -298,16 +298,14 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	///
 	///    Call imageDownloadHandler when each image download is completed.
 	///
+	///   (note) Actual implementation downloading photos are offerred by ImageDownloader and FlickrClient class
+	///
 	/// - returns: None
 	/// - parameter pin: a pin object which has a location where photos should be searched
-	/// - parameter imageDownloadHandler: a completion handler called on image downloading finished
+	/// - parameter imageDownloadedHandler: a completion handler called on image downloading finished
 	/// - parameter searchFinishedHandler: a completion handler called on the photo search finished
 	func getImagesFromFlickr(pin: Pin, imageDownloadHandler: (photoIndex: Int)->(),
 		searchFinishedHandler: (success: Bool)->()) {
-		if FlickrClient.sharedInstance().isSearchingImages {
-			trace("searching images now")
-			return
-		}
 		
 		// search image urls from Flickr
 		FlickrClient.sharedInstance().getImagesBySearch(pin.coordinate, page: page) { _photos, total , success in
@@ -327,7 +325,11 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		}
 	}
 	
-	/// download image data from specified Url
+	/// Download image data from specified Url
+	///
+	/// - returns: None
+	/// - parameter photo: a photo object to be downloaded
+	/// - parameter completionHandler: a completion handler called on the download finished
 	private func downloadImageFromServer(photo: Photo, completionHandler: (image: UIImage?) -> ()) {
 		photo.downloaded = Photo.Status.Downloading.rawValue
 		
