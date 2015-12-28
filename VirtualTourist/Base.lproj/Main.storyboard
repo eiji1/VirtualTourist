@@ -20,9 +20,11 @@
                         <subviews>
                             <navigationBar contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="hLH-qI-Bo8">
                                 <rect key="frame" x="0.0" y="0.0" width="600" height="44"/>
+                                <color key="barTintColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
                                 <items>
                                     <navigationItem id="ppB-5S-G8v">
                                         <barButtonItem key="rightBarButtonItem" title="Edit" id="MrE-Mu-UnJ">
+                                            <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                             <connections>
                                                 <action selector="onEditButtonPressed:" destination="BYZ-38-t0r" id="czD-46-coJ"/>
                                             </connections>
@@ -30,25 +32,25 @@
                                     </navigationItem>
                                 </items>
                             </navigationBar>
+                            <mapView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" misplaced="YES" mapType="standard" translatesAutoresizingMaskIntoConstraints="NO" id="Ibu-8D-esc">
+                                <rect key="frame" x="28" y="110" width="541" height="452"/>
+                            </mapView>
                             <view contentMode="scaleToFill" ambiguous="YES" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="eYS-KD-8E9">
                                 <rect key="frame" x="28" y="55" width="541" height="41"/>
                                 <subviews>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" misplaced="YES" text="Tap / Long press to delete pins" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="f9E-ot-HQB">
                                         <rect key="frame" x="56" y="10" width="256" height="21"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="16"/>
-                                        <color key="textColor" red="0.93725490199999995" green="0.93725490199999995" blue="0.95686274510000002" alpha="1" colorSpace="calibratedRGB"/>
+                                        <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                 </subviews>
-                                <color key="backgroundColor" red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="calibratedRGB"/>
+                                <color key="backgroundColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
                                 <constraints>
                                     <constraint firstItem="f9E-ot-HQB" firstAttribute="centerX" secondItem="eYS-KD-8E9" secondAttribute="centerX" id="FUh-d8-YDx"/>
                                     <constraint firstItem="f9E-ot-HQB" firstAttribute="centerY" secondItem="eYS-KD-8E9" secondAttribute="centerY" id="ylb-BH-hCY"/>
                                 </constraints>
                             </view>
-                            <mapView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" misplaced="YES" mapType="standard" translatesAutoresizingMaskIntoConstraints="NO" id="Ibu-8D-esc">
-                                <rect key="frame" x="28" y="110" width="541" height="452"/>
-                            </mapView>
                         </subviews>
                         <color key="backgroundColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
@@ -92,8 +94,10 @@
                             </mapView>
                             <navigationBar contentMode="scaleToFill" ambiguous="YES" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="P7x-Lp-xgf">
                                 <rect key="frame" x="0.0" y="0.0" width="600" height="44"/>
+                                <color key="tintColor" red="0.93725490199999995" green="0.93725490199999995" blue="0.95686274510000002" alpha="1" colorSpace="calibratedRGB"/>
+                                <color key="barTintColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
                                 <items>
-                                    <navigationItem title="Title" id="C0u-rA-CmG">
+                                    <navigationItem id="C0u-rA-CmG">
                                         <barButtonItem key="leftBarButtonItem" title="OK" id="xMr-0t-pDQ">
                                             <connections>
                                                 <action selector="onOKButtonPressed:" destination="dqT-bj-1BT" id="J3d-sk-f2G"/>
@@ -113,7 +117,8 @@
                                         </connections>
                                     </button>
                                 </subviews>
-                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <color key="backgroundColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
+                                <color key="tintColor" red="0.93725490199999995" green="0.93725490199999995" blue="0.95686274510000002" alpha="1" colorSpace="calibratedRGB"/>
                                 <constraints>
                                     <constraint firstItem="kez-sw-ubY" firstAttribute="centerX" secondItem="QN2-lh-yhE" secondAttribute="centerX" id="Jcx-I5-Gac"/>
                                     <constraint firstItem="kez-sw-ubY" firstAttribute="centerY" secondItem="QN2-lh-yhE" secondAttribute="centerY" id="Zrh-Ie-k8p"/>
