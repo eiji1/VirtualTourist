@@ -38,7 +38,7 @@ class FlickrClient{
 	static let SafeSearch = 1
 	static let DataFormat = "json"
 	static let NoJsonCallback = 1
-	static let PhotoNumPerPage = 15
+	static let PhotoNumPerPage = 25
 	
 	struct ParameterKeys {
 		static let Method = "method"
