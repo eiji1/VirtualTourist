@@ -8,7 +8,7 @@
 import UIKit
 
 /**
-Image storage class offers memory caching and file saving mechanism for specified image data.
+Image storage class offers memory caching and file storing methods for image data with specified identifier.
 */
 class ImageStorage {
 	

@@ -551,8 +551,8 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 			let pin = obj as! Pin
 			// fix allPhotoDownloaded flag
 			if !pin.allPhotoDownloaded {
-				// check actually downloaded or not
-				if Photo.checkAllPhotoDownloaded(pin.photos) {
+				// check successfully downloaded or not
+				if Photo.checkAllPhotoDownloaded(pin.photos, isIncludeFailures: false) {
 					pin.allPhotoDownloaded = true
 					coreDataStack.saveContext()
 				}
@@ -582,6 +582,9 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 			trace("resume downloading the image: photo id:\(photo.identifier)")
 			let pin = photo.pin!
 			
+			// restart downloading
+			photo.downloaded = Photo.Status.Downloading.rawValue
+			
 			ImageDownloader().downloadImageAsync(photo.url) { image, success in
 				if success {
 					if let _ = image {
@@ -598,8 +601,8 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 					photo.downloaded = Photo.Status.DownladFailed.rawValue
 				}
 				
-				// check all photos are downloaded
-				if Photo.checkAllPhotoDownloaded(pin.photos) {
+				// check all photos are successfully downloaded
+				if Photo.checkAllPhotoDownloaded(pin.photos, isIncludeFailures: false) {
 					pin.allPhotoDownloaded = true
 				}
 				

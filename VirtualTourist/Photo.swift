@@ -86,11 +86,11 @@ public class Photo : NSManagedObject {
 	///
 	/// - returns: result, this function returns true if the input array size is zero.
 	/// - parameter photos: An array of photo object
-	static func checkAllPhotoDownloaded(photos: [Photo]?) -> Bool {
+	static func checkAllPhotoDownloaded(photos: [Photo]?, isIncludeFailures: Bool = false) -> Bool {
 		if let _ = photos {
 			var isDownloaded = true
 			for photo in photos! {
-				isDownloaded = isDownloaded && (photo.downloaded == Status.Downloaded.rawValue)
+				isDownloaded = isDownloaded && (photo.downloaded == Status.Downloaded.rawValue || (isIncludeFailures && photo.downloaded == Status.DownladFailed.rawValue) )
 			}
 			return isDownloaded
 		}

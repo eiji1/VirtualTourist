@@ -9,7 +9,7 @@
 import UIKit
 
 /**
-General image downloader class offering image download APIs from specified URL (not restricted to Flickr URLs)
+Image downloader class offering synchronous and asynchronous image download APIs
 */
 class ImageDownloader {
 	

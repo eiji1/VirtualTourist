@@ -36,8 +36,15 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	/// A selected pin before transition
 	var pin :Pin!
 
-	/// Check all pictures has been downloaded and stored to the storage
+	/// Check all pictures has been downloaded (some pictures might not be downloaded)
 	var didAllPhotoDownloaded: Bool {
+		get {
+			return Photo.checkAllPhotoDownloaded(pin?.photos, isIncludeFailures: true)
+		}
+	}
+	
+	/// Check all pictures has been successfully downloaded
+	var didAllPhotoSuccessfullyDownloaded: Bool {
 		get {
 			return Photo.checkAllPhotoDownloaded(pin?.photos)
 		}
@@ -239,7 +246,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	// on selecting a collection view cell
 	func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath:NSIndexPath)
 	{
-		// do nothing until the downloading ends.
+		// Do nothing until the downloading ends.
+		// But after finished the downloads, the app should be able to delete any cells.
 		if !didAllPhotoDownloaded {
 			return
 		}
@@ -257,7 +265,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	/// - returns: None
 	/// - parameter photoIndex: An index of photo object, photoIndex is -1 if no photo was retrieved.
 	private func onImageDownloaded(photoIndex: Int) {
-		if didAllPhotoDownloaded {
+		
+		// if some download results are failed, pin status should not be updated,
+		// so that their downloads could restarts after launching the app next time.
+		if didAllPhotoSuccessfullyDownloaded {
 			pin.allPhotoDownloaded = true
 			coreDataStack.saveContext()
 		}
@@ -269,6 +280,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 					// reload the corresponding cell
 					self.collectionView.reloadItemsAtIndexPaths([NSIndexPath(forRow: photoIndex, inSection: 0)])
 				}
+				// After finished the downloads, the app should enables new collection button anyway.
 				if self.didAllPhotoDownloaded {
 					self.collectionView.reloadData()
 					self.newCollectionButton.enabled = true
