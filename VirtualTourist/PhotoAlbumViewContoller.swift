@@ -80,14 +80,13 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		collectionView.delegate = self;
 		newCollectionButton.enabled = false
 		
-		// setting up notifications for image downloads
+		// setting up download notifications
 		NSNotificationCenter.defaultCenter().addObserver(self, selector: "onDownloadNotified:", name: "imageDownloadNotification", object: nil)
 
 		// fetch photo managed objects
 		do {
 			try fetchedResultsController.performFetch()
 		} catch {}
-		
 		fetchedResultsController.delegate = self
 	}
 	
@@ -219,10 +218,17 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 				return cell
 			}
 		}
-		else {
+		else if photo.downloaded == Photo.Status.DownladFailed.rawValue {
+			cell.imageView.image = UIImage(named: "VirtualTourist_76")
+			cell.stopLoadingAnimation()
+		}
+		else if photo.downloaded == Photo.Status.Downloading.rawValue {
 			// show the placeholder on downloading an image
 			cell.imageView.image = UIImage(named: "VirtualTourist_76")
 			cell.startLoadingAnimation()
+		}
+		else {
+			// nothing displayed
 		}
 
 		return cell
@@ -316,18 +322,27 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	
 	/// download image data from specified Url
 	private func downloadImageFromServer(photo: Photo, completionHandler: (image: UIImage?) -> ()) {
+		photo.downloaded = Photo.Status.Downloading.rawValue
+		
 		imageDownloader.downloadImageAsync(photo.url) { (image, success) -> () in
-			if let _ = image {
-				trace("finished downloading the image: photo id:\(photo.identifier)")
-				// save the downloaded data to the image storage
-				self.imageStorage.storeImage(image, identifier: photo.identifier)
-				photo.path = self.imageStorage.createFileURL(photo.identifier)
-				photo.downloaded = Photo.Status.Downloaded.rawValue
-				
-				self.coreDataStack.saveContext()
-				
-				completionHandler(image: image)
+			if success {
+				if let _ = image {
+					trace("finished downloading the image: photo id:\(photo.identifier)")
+					// save the downloaded data to the image storage
+					self.imageStorage.storeImage(image, identifier: photo.identifier)
+					photo.path = self.imageStorage.createFileURL(photo.identifier)
+					photo.downloaded = Photo.Status.Downloaded.rawValue
+				}
+				else {
+					photo.downloaded = Photo.Status.DownladFailed.rawValue
+				}
 			}
+			else {
+				photo.downloaded = Photo.Status.DownladFailed.rawValue
+			}
+			
+			self.coreDataStack.saveContext()
+			completionHandler(image: image)
 		}
 	}
 }

@@ -16,6 +16,7 @@ public class Photo : NSManagedObject {
 		case NotRetrieved = 0
 		case Downloading = 1
 		case Downloaded = 2
+		case DownladFailed = 3
 	}
 	
 	@NSManaged var url: String
