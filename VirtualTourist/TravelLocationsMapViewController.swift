@@ -94,7 +94,9 @@ class PinDeleteDelegate : NSObject,  LongPressDelegate {
 	/// Long pressed coordinate
 	var startPos: CLLocationCoordinate2D!
 	/// polygon overlay
-	var polygon: MKPolygon!
+	var polygon : MKPolygon?
+	var vertices : [CLLocationCoordinate2D] = [CLLocationCoordinate2D]()
+	var isPressing :Bool = false
 	
 	/// ctor.
 	init(context: TravelLocationsMapViewController) {
@@ -103,31 +105,50 @@ class PinDeleteDelegate : NSObject,  LongPressDelegate {
 	
 	/// Store the start position
 	func onLongPressStarted(coordinate: CLLocationCoordinate2D) {
+		isPressing = true
 		ctx.mapView.scrollEnabled = false
+		
+		if let _ = polygon {
+			ctx.mapView.removeOverlay(polygon!)
+		}
+		
 		startPos = coordinate
+		let p0 = startPos!
+		vertices = [p0, p0, p0, p0]
+		polygon = MKPolygon(coordinates: &vertices, count: vertices.count)
+		
+		ctx.mapView.addOverlay(polygon!, level: MKOverlayLevel.AboveLabels)
 	}
 	
 	/// Draw an overlay rentangle whose digonal line is from start position to the current position.
 	func onLongPressedAndDragging(coordinate: CLLocationCoordinate2D) {
+		ctx.mapView.removeOverlay(polygon!)
+		
 		let p1 = startPos!
 		let p3 = coordinate
 		let p2 = CLLocationCoordinate2DMake(p3.latitude, p1.longitude)
 		let p4 = CLLocationCoordinate2DMake(p1.latitude, p3.longitude)
-		var vertices = [p1, p2, p3, p4]
-		if let _ = polygon {
-			ctx.mapView.removeOverlay(polygon)
-		}
+		vertices = [p1, p2, p3, p4]
 		polygon = MKPolygon(coordinates: &vertices, count: vertices.count)
-		ctx.mapView.addOverlay(polygon)
+		ctx.mapView.addOverlay(polygon!, level: MKOverlayLevel.AboveLabels)
 	}
 	
 	/// Remove all the registered pins in the rectangle area.
 	func onLongPressFinished(coordinate: CLLocationCoordinate2D) {
-		if let _ = polygon {
-			ctx.mapView.removeOverlay(polygon)
-			polygon = nil
+		isPressing = false
+
+		// remove overlays
+		if ctx.mapView.overlays.count > 0 {
+			ctx.mapView.removeOverlays(ctx.mapView.overlays)
 		}
 		
+		// add dummy layer
+		let p0 = coordinate
+		vertices = [p0, p0, p0, p0]
+		polygon = MKPolygon(coordinates: &vertices, count: vertices.count)
+		ctx.mapView.addOverlay(polygon!, level: MKOverlayLevel.AboveLabels)
+
+		// delete pins in the selected region
 		let pins = ctx.selectPinsInRegion(from: startPos, to: coordinate)
 		pins.forEach { (pin) -> () in
 			ctx.deletePin(pin)
@@ -158,19 +179,6 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	@IBOutlet weak var topView: UIView!
 	/// A Vertical constraint between map view and the top of the entier view.
 	@IBOutlet weak var heightConstraint: NSLayoutConstraint!
-	
-	/// A handler on pressed edit button
-	@IBAction func onEditButtonPressed(sender: AnyObject) {
-		if topView.hidden {
-			// visible top view
-			topView.hidden = false
-			heightConstraint.constant = topView.frame.size.height
-		}
-		else { // invisible
-			topView.hidden  = true
-			heightConstraint.constant = 0
-		}
-	}
 	
 	/// While the edit mode, the user can delete any pins.
 	var isEditMode: Bool {
@@ -268,7 +276,23 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 			photoAlbumViewController?.pin = selectedPin
 		}
 	}
-
+	
+	//------------------------------------------------------------------------//
+	// button actions
+	
+	/// A handler on pressed edit button
+	@IBAction func onEditButtonPressed(sender: AnyObject) {
+		if topView.hidden {
+			// visible top view
+			topView.hidden = false
+			heightConstraint.constant = topView.frame.size.height
+		}
+		else { // invisible
+			topView.hidden  = true
+			heightConstraint.constant = 0
+		}
+	}
+	
 	//------------------------------------------------------------------------//
 	// GestureRecognizer related methods
 
@@ -353,9 +377,17 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	
 	/// Render a custom overlay
 	func mapView(mapView: MKMapView, rendererForOverlay overlay: MKOverlay) -> MKOverlayRenderer {
-		let polygonView = MKPolygonRenderer(overlay: overlay)
-		polygonView.strokeColor = UIColor.magentaColor()
-		return polygonView
+		if overlay is MKPolygon {
+			let polygonView = MKPolygonRenderer(overlay: overlay)
+			polygonView.strokeColor = UIColor.magentaColor()
+			if deletePinOperation.isPressing == false {
+				return MKPolygonRenderer()
+			}
+			else {
+				return polygonView
+			}
+		}
+		return MKPolygonRenderer()
 	}
 	
 	// map operation helpers
