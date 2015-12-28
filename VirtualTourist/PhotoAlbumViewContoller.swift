@@ -252,7 +252,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 
 	// helper methods
 
-	/// download completion handler
+	/// Download completion handler
+	///
+	/// - returns: None
+	/// - parameter photoIndex: An index of photo object, photoIndex is -1 if no photo was retrieved.
 	private func onImageDownloaded(photoIndex: Int) {
 		if didAllPhotoDownloaded {
 			pin.allPhotoDownloaded = true
@@ -261,8 +264,11 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		
 		sharedApp.dispatch_async_main {
 			if let _ = self.collectionView {
-				// reload the corresponding cell
-				self.collectionView.reloadItemsAtIndexPaths([NSIndexPath(forRow: photoIndex, inSection: 0)])
+				// valid index
+				if photoIndex >= 0 {
+					// reload the corresponding cell
+					self.collectionView.reloadItemsAtIndexPaths([NSIndexPath(forRow: photoIndex, inSection: 0)])
+				}
 				if self.didAllPhotoDownloaded {
 					self.collectionView.reloadData()
 					self.newCollectionButton.enabled = true
@@ -311,13 +317,20 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		FlickrClient.sharedInstance().getImagesBySearch(pin.coordinate, page: page) { _photos, total , success in
 			if success {
 				trace("got images from Flikcr!")
-				for (index, photo) in _photos.enumerate() {
-					photo.pin = pin // set an inverse relationship
-					photo.identifier = "\(pin.identifier)_\(index)" // creating an identifier by index
-					
-					trace("start downloading an image \(index)")
-					self.downloadImageFromServer(photo) { image in
-						imageDownloadHandler(photoIndex: index)
+				
+				// no image is retrieved
+				if _photos.count == 0 {
+					imageDownloadHandler(photoIndex: -1) // with invalid index
+				}
+				else {
+					for (index, photo) in _photos.enumerate() {
+						photo.pin = pin // set an inverse relationship
+						photo.identifier = "\(pin.identifier)_\(index)" // creating an identifier by index
+						
+						trace("start downloading an image \(index)")
+						self.downloadImageFromServer(photo) { image in
+							imageDownloadHandler(photoIndex: index)
+						}
 					}
 				}
 			}

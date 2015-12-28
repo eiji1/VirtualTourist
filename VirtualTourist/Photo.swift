@@ -82,7 +82,10 @@ public class Photo : NSManagedObject {
 		return photos
 	}
 	
-	/// Check specified photos are completely downloaded
+	/// Check all the specified photos are finished downloading
+	///
+	/// - returns: result, this function returns true if the input array size is zero.
+	/// - parameter photos: An array of photo object
 	static func checkAllPhotoDownloaded(photos: [Photo]?) -> Bool {
 		if let _ = photos {
 			var isDownloaded = true

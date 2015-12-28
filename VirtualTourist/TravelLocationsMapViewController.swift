@@ -169,8 +169,8 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	
 	/// the first location
 	let DefaultLocation = CLLocationCoordinate2DMake(35.6897,139.6922)
-	/// the first region
-	let DefaultRegionSize = 5.0
+	/// the first region size
+	let DefaultRegionSize = 0.3
 	
 	// UI
 	
