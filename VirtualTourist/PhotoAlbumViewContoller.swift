@@ -183,7 +183,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 			case .Insert: break
 			case .Delete:
 				let photo = anObject as! Photo
-				// automatically delete underlying files
+				// automatically delete underlying files (solution 2)
 				photo.removeImageFiles()
 				pin.checkCoredata()
 				break

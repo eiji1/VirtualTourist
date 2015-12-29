@@ -51,8 +51,6 @@ public class Photo : NSManagedObject {
 
 	/// Remove photo object persistently
 	func remove(coreDataStack: CoreDataStackManager) {
-		// delete an image from cache and an underlying file from the Documents directory
-		//ImageStorage().removeImage(identifier)
 		trace("photo managed object removed:\(ImageStorage().createFileURL(identifier))")
 		// remove photo managed object from core data stack
 		coreDataStack.managedObjectContext.deleteObject(self)
@@ -67,6 +65,13 @@ public class Photo : NSManagedObject {
 			imageStorage.removeImage(identifier)
 			trace("image file deleted:\(imageStorage.createFileURL(identifier))")
 		}
+		else {
+			trace("image file has been already deleted:\(imageStorage.createFileURL(identifier))")
+		}
+	}
+	
+	override public func prepareForDeletion() {
+		removeImageFiles() // automatically delete underlying files (solution 1)
 	}
 	
 	/// Convert Json result to Photo object array
