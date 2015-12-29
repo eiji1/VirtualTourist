@@ -21,9 +21,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	var page = Const.Flickr.DefaultPage
 
 	// helper classes
-	
-	var imageStorage: ImageStorage = ImageStorage()
-	var imageDownloader: ImageDownloader = ImageDownloader()
 	let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
 	
 	// UI
@@ -125,8 +122,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		// new image set
 		page++
 		// download new images and replace current photos with them
-		getImagesFromFlickr(pin, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: onPhotoURLsRetrieved)
-		
+		FlickrClient.sharedInstance().downloadPicturesByFlickrPhotosSearch(pin, page: page, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: onPhotoURLsRetrieved)
 	}
 
 	/// show a currently selected pin on the map
@@ -229,7 +225,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 			let photo = self.fetchedResultsController.objectAtIndexPath(indexPath) as! Photo
 			if photo.downloaded == Photo.Status.Downloaded.rawValue {
 				// display an image in the storage, new download is not necessary
-				if let image = self.imageStorage.getImage(photo.identifier) {
+				if let image = ImageStorage().getImage(photo.identifier) {
 					cell.imageView.image = image
 					cell.stopLoadingAnimation()
 				}
@@ -317,102 +313,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 					collectionView.reloadData()
 				}
 			}
-		}
-	}
-	
-	/// Download images using Flickr photo search web API. This method runs following processes.
-	/// 1. Search photos using Flickr API specified with location and get their images' URL strings
-	///
-	///    Call searchFinishedHandler when photo search is completed.
-	/// 2. Download their image data from the URLs
-	///
-	///    Call imageDownloadHandler when each image download is completed.
-	///
-	///   (note) Actual implementation downloading photos are offerred by ImageDownloader and FlickrClient class
-	///
-	/// - returns: None
-	/// - parameter pin: a pin object which has a location where photos should be searched
-	/// - parameter imageDownloadedHandler: a completion handler called on image downloading finished
-	/// - parameter searchFinishedHandler: a completion handler called on the photo search finished
-	func getImagesFromFlickr(pin: Pin, imageDownloadHandler: (photoIndex: Int)->(),
-		searchFinishedHandler: (success: Bool)->()) {
-		trace("chech thread at getImagesFromFlickr", detail: true) // main queue
-			
-		// search image urls from Flickr
-		FlickrClient.sharedInstance().getImagesBySearch(pin.coordinate, page: page) { _photos, total , success in
-			trace("chech thread after getImagesBySearch", detail: true) // global queue
-			
-			if success {
-				trace("got images from Flikcr!", detail: true)
-				
-				// no image is retrieved
-				if _photos.count == 0 {
-					imageDownloadHandler(photoIndex: -1) // with invalid index
-				}
-				else {
-					for (index, photo) in _photos.enumerate() {
-						
-						// [core data concurrency] update managed objects on main queue
-						self.sharedApp.dispatch_sync_main {
-							photo.pin = pin // set an inverse relationship
-							photo.identifier = "\(pin.identifier)_\(index)" // creating an identifier by index
-						}
-						
-						trace("start downloading an image \(index)", detail: true)
-						self.downloadImageFromServer(photo) { image in
-							imageDownloadHandler(photoIndex: index)
-						}
-					}
-				}
-			}
-			searchFinishedHandler(success: success)
-		}
-	}
-	
-	/// Download image data from specified Url
-	///
-	/// - returns: None
-	/// - parameter photo: a photo object to be downloaded
-	/// - parameter completionHandler: a completion handler called on the download finished
-	private func downloadImageFromServer(photo: Photo, completionHandler: (image: UIImage?) -> ()) {
-		trace("check thread at downloadImageFromServer", detail: true) // global queue
-		
-		
-		// [core data concurrency] access managed objects on main queue
-		var url = ""
-		sharedApp.dispatch_sync_main {
-			photo.downloaded = Photo.Status.Downloading.rawValue
-			url = photo.url
-		}
-			
-		imageDownloader.downloadImageAsync(url) { (image, success) -> () in
-			trace("check thread after downloadImageAsync", detail: true) // global queue
-
-			// [core data concurrency] update managed objects on main queue
-			self.sharedApp.dispatch_sync_main {
-				
-				if success {
-					if let _ = image {
-						trace("finished downloading the image: photo id:\(photo.identifier)", detail: true)
-						// save the downloaded data to the image storage
-						self.imageStorage.storeImage(image, identifier: photo.identifier)
-						photo.path = self.imageStorage.createFileURL(photo.identifier)
-						photo.downloaded = Photo.Status.Downloaded.rawValue
-					}
-					else {
-						photo.downloaded = Photo.Status.DownladFailed.rawValue
-					}
-				}
-				else {
-					photo.downloaded = Photo.Status.DownladFailed.rawValue
-				}
-				
-				self.coreDataStack.saveContext()
-				
-			} // dispatch
-			
-			
-			completionHandler(image: image)
 		}
 	}
 }

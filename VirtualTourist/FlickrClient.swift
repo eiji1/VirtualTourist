@@ -64,7 +64,7 @@ class FlickrClient{
 		static let Url = Const.Flickr.ResponseKeys.Url
 	}
 	
-	/// Retrieve images from Flickr photo search API
+	/// Retrieve images from Flickr photo search API (simply returns an array of Photo objects)
 	/// - returns: None (using completion handler)
 	/// - parameter coordinates: a place where photos are taken
 	/// - parameter page: a number identifying the set of photo groups
@@ -123,3 +123,112 @@ class FlickrClient{
 		return photos
 	}
 }
+
+import UIKit // UIApplication.sharedApplication
+
+/**
+This extension offers more applicable methods using photo and pin objects.
+*/
+extension FlickrClient {
+
+	/// Download pictures using Flickr photos search API. This method runs following processes.
+	/// 1. Search photos using Flickr API specified with location and get their images' URL strings
+	///
+	///    Call searchFinishedHandler when photo search is completed.
+	/// 2. Download their image data from the URLs
+	///
+	///    Call imageDownloadHandler when each image download is completed.
+	///
+	///   (note) Actual implementation downloading photos are offerred by ImageDownloader and FlickrClient base class
+	///
+	/// - returns: None
+	/// - parameter pin: a pin object which has a location where photos should be searched
+	/// - parameter imageDownloadedHandler: a completion handler called on image downloading finished
+	/// - parameter searchFinishedHandler: a completion handler called on the photo search finished
+	func downloadPicturesByFlickrPhotosSearch(pin: Pin, page: Int, imageDownloadHandler: (photoIndex: Int)->(),
+		searchFinishedHandler: (success: Bool)->()) {
+			trace("chech thread at getImagesFromFlickr", detail: true) // main queue
+			
+			// search image urls from Flickr
+			FlickrClient.sharedInstance().getImagesBySearch(pin.coordinate, page: page) { _photos, total , success in
+				trace("chech thread after getImagesBySearch", detail: true) // global queue
+				
+				if success {
+					trace("got images from Flikcr!", detail: true)
+					
+					// no image is retrieved
+					if _photos.count == 0 {
+						imageDownloadHandler(photoIndex: -1) // with invalid index
+					}
+					else {
+						for (index, photo) in _photos.enumerate() {
+							
+							// [core data concurrency] update managed objects on main queue
+							let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
+							sharedApp.dispatch_sync_main {
+								photo.pin = pin // set an inverse relationship
+								photo.identifier = "\(pin.identifier)_\(index)" // creating an identifier by index
+							}
+							
+							trace("start downloading an image \(index)", detail: true)
+							self.downloadImageFromServer(photo) { image in
+								imageDownloadHandler(photoIndex: index)
+							}
+						}
+					}
+				}
+				searchFinishedHandler(success: success)
+			}
+	}
+	
+	/// Download image data from specified Url
+	///
+	/// - returns: None
+	/// - parameter photo: a photo object to be downloaded
+	/// - parameter completionHandler: a completion handler called on the download finished
+	private func downloadImageFromServer(photo: Photo, completionHandler: (image: UIImage?) -> ()) {
+		trace("check thread at downloadImageFromServer", detail: true) // global queue
+		let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
+		
+		// [core data concurrency] access managed objects on main queue
+		var url = ""
+		sharedApp.dispatch_sync_main {
+			photo.downloaded = Photo.Status.Downloading.rawValue
+			url = photo.url
+		}
+		
+		ImageDownloader().downloadImageAsync(url) { (image, success) -> () in
+			trace("check thread after downloadImageAsync", detail: true) // global queue
+			
+			// [core data concurrency] update managed objects on main queue
+			
+			sharedApp.dispatch_sync_main {
+				
+				if success {
+					if let _ = image {
+						trace("finished downloading the image: photo id:\(photo.identifier)", detail: true)
+						// save the downloaded data to the image storage
+						ImageStorage().storeImage(image, identifier: photo.identifier)
+						photo.path = ImageStorage().createFileURL(photo.identifier)
+						photo.downloaded = Photo.Status.Downloaded.rawValue
+					}
+					else {
+						photo.downloaded = Photo.Status.DownladFailed.rawValue
+					}
+				}
+				else {
+					photo.downloaded = Photo.Status.DownladFailed.rawValue
+				}
+				
+				sharedApp.coreDataStackManager.saveContext()
+				
+			} // dispatch
+			
+			
+			completionHandler(image: image)
+		}
+	}
+}
+
+
+

@@ -492,9 +492,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	
 	/// Prefetch image data from Flickr photo search API. This function starts when user's finger is lift off the map and the new location is decided.
 	private func prefetchImageFromFlickr(pin: Pin) {
-		// reusing PhotoAlbumViewController method but do nothing for any view objects
-		let photoAlbumViewController = self.storyboard!.instantiateViewControllerWithIdentifier("PhotoAlbumViewController") as! PhotoAlbumViewController
-		photoAlbumViewController.getImagesFromFlickr(pin, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: { success in /* do nothing */ } )
+		FlickrClient.sharedInstance().downloadPicturesByFlickrPhotosSearch(pin, page: Const.Flickr.DefaultPage, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: { success in /* do nothing */ } )
 	}
 	
 	/// Notifying the completion of image downloads to the PhotoAlbumViewController
