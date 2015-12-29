@@ -26,6 +26,7 @@
 		CE1455B01C0C931600309B49 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1455AF1C0C931500309B49 /* ImageCache.swift */; };
 		CE1455B21C0CBE4700309B49 /* ImageDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1455B11C0CBE4700309B49 /* ImageDownloader.swift */; };
 		CE1455B41C0CC38000309B49 /* Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1455B31C0CC38000309B49 /* Map.swift */; };
+		CE2B2FB11C331EE1001966B2 /* Const.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE2B2FB01C331EE1001966B2 /* Const.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,6 +72,7 @@
 		CE1455AF1C0C931500309B49 /* ImageCache.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
 		CE1455B11C0CBE4700309B49 /* ImageDownloader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageDownloader.swift; sourceTree = "<group>"; };
 		CE1455B31C0CC38000309B49 /* Map.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Map.swift; sourceTree = "<group>"; };
+		CE2B2FB01C331EE1001966B2 /* Const.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Const.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,6 +129,7 @@
 				CE0809F81C0B33C100E427F4 /* PhotoCollectionViewCell.swift */,
 				CE0809F21C0B168200E427F4 /* WebClient.swift */,
 				CE0809F41C0B177500E427F4 /* FlickrClient.swift */,
+				CE2B2FB01C331EE1001966B2 /* Const.swift */,
 				CE1455A91C0B707E00309B49 /* Pin.swift */,
 				CE1455AB1C0B70AD00309B49 /* Photo.swift */,
 				CE1455B31C0CC38000309B49 /* Map.swift */,
@@ -309,6 +312,7 @@
 				CE0809F31C0B168200E427F4 /* WebClient.swift in Sources */,
 				CE0809C81C0367AE00E427F4 /* VirtualTourist.xcdatamodeld in Sources */,
 				CE0809F51C0B177500E427F4 /* FlickrClient.swift in Sources */,
+				CE2B2FB11C331EE1001966B2 /* Const.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

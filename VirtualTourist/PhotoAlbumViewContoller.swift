@@ -18,7 +18,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	// flickr related parameters
 	
 	/// A parameter specifing a group of photo data
-	var page = 1
+	var page = Const.Flickr.DefaultPage
 
 	// helper classes
 	

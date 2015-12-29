@@ -30,27 +30,27 @@ class FlickrClient{
 	
 	// constants
 	
-	static let BaseSecuredUrl = "https://api.flickr.com/"
-	static let BaseMethod = "services/rest/"
-	static let Method = "flickr.photos.search"
-	static let ApiKey = "2d1989834346d011702cd3994d731ef3"
-	static let Extras = "url_m"
-	static let SafeSearch = 1
-	static let DataFormat = "json"
-	static let NoJsonCallback = 1
-	static let PhotoNumPerPage = 25
+	static let BaseSecuredUrl = Const.Flickr.BaseSecuredUrl
+	static let BaseMethod = Const.Flickr.BaseMethod
+	static let Method = Const.Flickr.Method
+	static let ApiKey = Const.Flickr.ApiKey
+	static let Extras = Const.Flickr.Extras
+	static let SafeSearch = Const.Flickr.SafeSearch
+	static let DataFormat = Const.Flickr.DataFormat
+	static let NoJsonCallback = Const.Flickr.NoJsonCallback
+	static let PhotoNumPerPage = Const.Flickr.PhotoNumPerPage
 	
 	struct ParameterKeys {
-		static let Method = "method"
-		static let ApiKey = "api_key"
-		static let Lon = "lon"
-		static let Lat = "lat"
-		static let SafeSearch = "safe_search"
-		static let Extras = "extras"
-		static let Format = "format"
-		static let NoJsonCallback = "nojsoncallback"
-		static let PerPage = "per_page"
-		static let Page = "page"
+		static let Method = Const.Flickr.ParameterKeys.Method
+		static let ApiKey = Const.Flickr.ParameterKeys.ApiKey
+		static let Lon = Const.Flickr.ParameterKeys.Lon
+		static let Lat = Const.Flickr.ParameterKeys.Lat
+		static let SafeSearch = Const.Flickr.ParameterKeys.SafeSearch
+		static let Extras = Const.Flickr.ParameterKeys.Extras
+		static let Format = Const.Flickr.ParameterKeys.Format
+		static let NoJsonCallback = Const.Flickr.ParameterKeys.NoJsonCallback
+		static let PerPage = Const.Flickr.ParameterKeys.PerPage
+		static let Page = Const.Flickr.ParameterKeys.Page
 	}
 	
 	// not used
@@ -58,10 +58,10 @@ class FlickrClient{
 	//}
 	
 	struct JSONResponseKeys {
-		static let Photos = "photos"
-		static let Total = "total"
-		static let Photo = "photo"
-		static let Url = "url_m"
+		static let Photos = Const.Flickr.ResponseKeys.Photos
+		static let Total = Const.Flickr.ResponseKeys.Total
+		static let Photo = Const.Flickr.ResponseKeys.Photo
+		static let Url = Const.Flickr.ResponseKeys.Url
 	}
 	
 	/// Retrieve images from Flickr photo search API
@@ -94,7 +94,6 @@ class FlickrClient{
 				handler(photos: [Photo](), total: 0, success: false)
 				return
 			}
-			
 			let photos = self.parseResult(result)
 			handler(photos: photos, total: 0, success: true)
 		}

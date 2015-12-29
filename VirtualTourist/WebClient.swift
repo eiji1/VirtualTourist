@@ -65,7 +65,7 @@ final class WebClient : NSObject{
 	typealias CompletionHandlerWithResultString = (resultString: String?, success: Bool, error: NSError?) -> Void
 	
 	private let session : NSURLSession // session class for downloading data
-	private let HttpRequestTimeoutInterval = 5.0
+	private let HttpRequestTimeoutInterval = Const.HttpRequest.TimeoutIntervalInSec
 	
 	var startParsePos = 0 // how many letters should be skipped to start parsing JSON
 	
