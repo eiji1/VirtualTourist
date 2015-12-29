@@ -75,7 +75,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	}()
 	
 	//------------------------------------------------------------------------//
-	// UIViewController related methods
+	//MARK: UIViewController related methods
 	
 	override func viewDidLoad() {
 		super.viewDidLoad()
@@ -108,7 +108,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	}
 	
 	//------------------------------------------------------------------------//
-	// UI actions
+	//MARK: Button actions
 	
 	@IBAction func onOKButtonPressed(sender: AnyObject) {
 		self.dismissViewControllerAnimated(true, completion: nil)
@@ -125,6 +125,9 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		FlickrClient.sharedInstance().downloadPicturesByFlickrPhotosSearch(pin, page: page, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: onPhotoURLsRetrieved)
 	}
 
+	//------------------------------------------------------------------------//
+	//MARK: Map helper function
+	
 	/// show a currently selected pin on the map
 	private func showMap() {
 		if let map = pin.map {
@@ -137,7 +140,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	}
 	
 	//------------------------------------------------------------------------//
-	// helper methods for managed objects
+	//MARK: Helper methods for managed objects
 	
 	/// Delete all pictures associated with selected pin object
 	private func removeAllPhotosFromAlbum() {
@@ -154,7 +157,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	}
 	
 	//------------------------------------------------------------------------//
-	// NSFetchedResultsControllerDelegate methods
+	//MARK: NSFetchedResultsControllerDelegate methods
 	
 	/// on start to change managed objects
 	func controllerWillChangeContent(controller: NSFetchedResultsController) {
@@ -202,7 +205,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	}
 	
 	//------------------------------------------------------------------------//
-	// UICollectionViewDataSource, UICollectionViewDelegate related methods
+	//MARK: UICollectionViewDataSource, UICollectionViewDelegate related methods
 	
 	// returns the number of collection view cells
 	func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -262,8 +265,9 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		
 		collectionView.deleteItemsAtIndexPaths([indexPath])
 	}
-
-	// helper methods
+	
+	//------------------------------------------------------------------------//
+	//MARK: Helper methods for image downloads
 
 	/// Download completion handler
 	///

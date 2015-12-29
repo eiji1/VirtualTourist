@@ -222,7 +222,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
 	
 	//------------------------------------------------------------------------//
-	// UIViewController related methods
+	//MARK: UIViewController related methods
 	
 	override func viewDidLoad() {
 		super.viewDidLoad()
@@ -281,7 +281,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	}
 	
 	//------------------------------------------------------------------------//
-	// button actions
+	//MARK: Button actions
 	
 	/// A handler on pressed edit button
 	@IBAction func onEditButtonPressed(sender: AnyObject) {
@@ -297,7 +297,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	}
 	
 	//------------------------------------------------------------------------//
-	// GestureRecognizer related methods
+	//MARK: GestureRecognizer related methods
 
 	/// A handler on long Pressed gesture
 	func onLongPressedGesture(gestureRecognizer: UIGestureRecognizer) {
@@ -340,7 +340,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	}
 	
 	//------------------------------------------------------------------------//
-	// MapViewDelegate methods
+	//MARK: MapViewDelegate methods
 	
 	/// When a pin was selected
 	func mapView(mapView: MKMapView, didSelectAnnotationView view: MKAnnotationView) {
@@ -393,7 +393,8 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		return MKPolygonRenderer()
 	}
 	
-	// map operation helpers
+	//------------------------------------------------------------------------//
+	//MARK: Map operation helpers
 	
 	/// Move to the specified location
 	private func moveTo(center: CLLocationCoordinate2D, regionSize: Double) {
@@ -429,7 +430,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	}
 	
 	//------------------------------------------------------------------------//
-	// core data and managed objects related methods
+	//MARK: Core data and managed objects related methods
 	
 	/// Fetch pin objects from core data stack.
 	private func fetchPinObjects() {
@@ -488,7 +489,7 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	}
 	
 	//------------------------------------------------------------------------//
-	// prefetching image data helpers
+	//MARK: Prefetching image helper functions
 	
 	/// Prefetch image data from Flickr photo search API. This function starts when user's finger is lift off the map and the new location is decided.
 	private func prefetchImageFromFlickr(pin: Pin) {

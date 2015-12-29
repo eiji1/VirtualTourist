@@ -94,6 +94,8 @@ class ImageStorage {
 		return createFileURL(identifier)
 	}
 	
+	//MARK: private functions
+	
 	/// get image data from memory cache
 	private func getImageFromMemory(path: String) -> UIImage? {
 		if let image = cache.objectForKey(path) as? UIImage {
