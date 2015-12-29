@@ -6,8 +6,6 @@
 //  Copyright © 2015 eiji & Udacity. All rights reserved.
 //
 
-import Foundation
-
 import UIKit
 
 /**

@@ -7,7 +7,6 @@
 //
 
 import UIKit
-import CoreData
 
 // logging
 func trace(message: Any..., detail: Bool = false) {
