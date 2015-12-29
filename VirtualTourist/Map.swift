@@ -3,7 +3,7 @@
 //  VirtualTourist
 //
 //  Created by eiji on 2015/12/01.
-//  Copyright © 2015 Udacity. All rights reserved.
+//  Copyright © 2015 eiji & Udacity. All rights reserved.
 //
 
 import CoreData

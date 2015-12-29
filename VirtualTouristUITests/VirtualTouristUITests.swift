@@ -3,7 +3,7 @@
 //  VirtualTouristUITests
 //
 //  Created by eiji on 2015/11/24.
-//  Copyright © 2015年 Udacity. All rights reserved.
+//  Copyright © 2015 eiji. All rights reserved.
 //
 
 import XCTest
