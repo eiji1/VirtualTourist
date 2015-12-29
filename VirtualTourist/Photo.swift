@@ -71,21 +71,27 @@ public class Photo : NSManagedObject {
 	
 	/// Convert Json result to Photo object array
 	static func getPhotoFromResults(results: [[String : AnyObject]]) -> [Photo] {
+		trace("check current thread at getPhotoFromResults", detail: true) // global gueue
 		
 		let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
-		let coreData = sharedApp.coreDataStackManager
+		let managedObjectContext = sharedApp.coreDataStackManager.managedObjectContext
 		
 		var photos = [Photo]()
-		for result in results {
-			photos.append(Photo(dictionary: result, context:coreData.managedObjectContext))
+		
+		// [core data concurrency] create new managed objects on the main queue
+		sharedApp.dispatch_sync_main {
+			for result in results {
+				photos.append(Photo(dictionary: result, context:managedObjectContext))
+			}
 		}
 		return photos
 	}
 	
-	/// Check all the specified photos are finished downloading
+	/// Check all the specified photos are finished downloading.
 	///
 	/// - returns: result, this function returns true if the input array size is zero.
 	/// - parameter photos: An array of photo object
+	/// - parameter isIncludeFailures: to accept failure cases or not
 	static func checkAllPhotoDownloaded(photos: [Photo]?, isIncludeFailures: Bool = false) -> Bool {
 		if let _ = photos {
 			var isDownloaded = true

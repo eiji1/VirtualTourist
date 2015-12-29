@@ -10,9 +10,15 @@ import UIKit
 import CoreData
 
 // logging
-func trace(message: Any...) {
+func trace(message: Any..., detail: Bool = false) {
 //#if DEBUG
-		print(message)
+	var str = ""
+	if detail {
+		str = "\(message) at file: \(__FILE__), func:\(__FUNCTION__), line: \(__LINE__), col: \(__COLUMN__): th:\(NSThread.currentThread())"
+	} else {
+		str = "\(message)"
+	}
+	print(str)
 //#endif
 }
 
@@ -63,24 +69,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 	// async dispatching
 	
-	/**
-	Submit functional block to be asynchronously executed on the global queue
-	
-	:param: handler target handler function which should be executed asynchronously
-	:returns: none
-	*/
+
+	/// Execute functional block asynchronously on the global queue
+	///
+	/// - returns: None
+	/// - parameter handler target block which should be executed asynchronously
 	func dispatch_async_globally(handler: () -> ()) {
 		dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), handler)
 	}
 	
-	/**
-	Submit functional block to be asynchronously executed on the main thread
-	
-	:param: handler target handler which should be executed asynchronously
-	:returns: none
-	*/
+	/// Execute functional block asynchronously on the main thread
+	///
+	/// - returns: None
+	/// - parameter handler target block which should be executed asynchronously
 	func dispatch_async_main(handler: () -> ()) {
 		dispatch_async(dispatch_get_main_queue(),handler);
+	}
+	
+	/// Execute functional block synchronously on the main queue.
+	///
+	/// **[core data concurrency]** This method is used for core data objects.
+	/// The functional block will be executed in performBlockAndWait method.
+	/// Do not run processses with a lot of calculations.
+	/// - returns: None
+	/// - parameter handler target handler function which should be executed asynchronously
+	func dispatch_sync_main(handler: () -> ()) {
+		coreDataStackManager.managedObjectContext.performBlockAndWait(handler)
 	}
 }
 

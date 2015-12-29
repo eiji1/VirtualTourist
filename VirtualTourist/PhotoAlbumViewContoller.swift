@@ -145,6 +145,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	
 	/// Delete all pictures associated with selected pin object
 	private func removeAllPhotosFromAlbum() {
+		trace("check thread at removeAllPhotosFromAlbum", detail: true) // main thread
+		
 		pin.allPhotoDownloaded = false
 		
 		// delete all elements from local array
@@ -188,9 +190,11 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 			case .Update:
 				let index = indexPath!.row
 				sharedApp.dispatch_async_main() {
-					self.collectionView.reloadItemsAtIndexPaths([NSIndexPath(forRow: index, inSection: 0)])
+					if index < self.collectionView.numberOfItemsInSection(0) {
+						self.collectionView.reloadItemsAtIndexPaths([NSIndexPath(forRow: index, inSection: 0)])
+					}
+					self.pin.checkCoredata()
 				}
-				pin.checkCoredata()
 				break
 			default: break
 			}
@@ -213,33 +217,38 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	
 	// render a collection cell specified with indexPath
 	func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
-		let cell = collectionView.dequeueReusableCellWithReuseIdentifier("PhotoCollectionViewCell", forIndexPath: indexPath) as! PhotoCollectionViewCell
-		cell.userInteractionEnabled = true
-
-		let photo = fetchedResultsController.objectAtIndexPath(indexPath) as! Photo
+		trace("check thread at collectionView", detail: true) // global queue and main queue!!
 		
-		if photo.downloaded == Photo.Status.Downloaded.rawValue {
-			// display an image in the storage, new download is not necessary
-			if let image = imageStorage.getImage(photo.identifier) {
-				cell.imageView.image = image
-				
-				cell.stopLoadingAnimation()
-				return cell
+		let cell = collectionView.dequeueReusableCellWithReuseIdentifier("PhotoCollectionViewCell", forIndexPath: indexPath) as! PhotoCollectionViewCell
+		
+		// [core data concurrency] update managed objects and UIs on main thread
+		sharedApp.dispatch_sync_main {
+		
+			cell.userInteractionEnabled = true
+			
+			let photo = self.fetchedResultsController.objectAtIndexPath(indexPath) as! Photo
+			if photo.downloaded == Photo.Status.Downloaded.rawValue {
+				// display an image in the storage, new download is not necessary
+				if let image = self.imageStorage.getImage(photo.identifier) {
+					cell.imageView.image = image
+					cell.stopLoadingAnimation()
+				}
 			}
-		}
-		else if photo.downloaded == Photo.Status.DownladFailed.rawValue {
-			cell.imageView.image = UIImage(named: "VirtualTourist_76")
-			cell.stopLoadingAnimation()
-		}
-		else if photo.downloaded == Photo.Status.Downloading.rawValue {
-			// show the placeholder on downloading an image
-			cell.imageView.image = UIImage(named: "VirtualTourist_76")
-			cell.startLoadingAnimation()
-		}
-		else {
-			// nothing displayed
-		}
+			else if photo.downloaded == Photo.Status.DownladFailed.rawValue {
+				cell.imageView.image = UIImage(named: "VirtualTourist_76")
+				cell.stopLoadingAnimation() // hide loading animation
+			}
+			else if photo.downloaded == Photo.Status.Downloading.rawValue {
+				// show the placeholder on downloading an image
+				cell.imageView.image = UIImage(named: "VirtualTourist_76")
+				cell.startLoadingAnimation()
+			}
+			else {
+				// nothing displayed
+			}
 
+		} // dispatch
+		
 		return cell
 	}
 	
@@ -265,15 +274,18 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	/// - returns: None
 	/// - parameter photoIndex: An index of photo object, photoIndex is -1 if no photo was retrieved.
 	private func onImageDownloaded(photoIndex: Int) {
-		
-		// if some download results are failed, pin status should not be updated,
-		// so that their downloads could restarts after launching the app next time.
-		if allPhotoDownloadsSuccessfullyFinished {
-			pin.allPhotoDownloaded = true
-			coreDataStack.saveContext()
-		}
-		
-		sharedApp.dispatch_async_main {
+		trace("check thread is image download thread", detail: true) // global queue
+
+		// [core data concurrency] update managed objects on main thread
+		self.sharedApp.dispatch_async_main {
+			
+			// if some download results are failed, pin status should not be updated,
+			// so that their downloads could restarts after launching the app next time.
+			if self.allPhotoDownloadsSuccessfullyFinished {
+				self.pin.allPhotoDownloaded = true
+				self.coreDataStack.saveContext()
+			}
+			
 			if let _ = self.collectionView {
 				// valid index
 				if photoIndex >= 0 {
@@ -324,11 +336,14 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	/// - parameter searchFinishedHandler: a completion handler called on the photo search finished
 	func getImagesFromFlickr(pin: Pin, imageDownloadHandler: (photoIndex: Int)->(),
 		searchFinishedHandler: (success: Bool)->()) {
-		
+		trace("chech thread at getImagesFromFlickr", detail: true) // main queue
+			
 		// search image urls from Flickr
 		FlickrClient.sharedInstance().getImagesBySearch(pin.coordinate, page: page) { _photos, total , success in
+			trace("chech thread after getImagesBySearch", detail: true) // global queue
+			
 			if success {
-				trace("got images from Flikcr!")
+				trace("got images from Flikcr!", detail: true)
 				
 				// no image is retrieved
 				if _photos.count == 0 {
@@ -336,10 +351,14 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 				}
 				else {
 					for (index, photo) in _photos.enumerate() {
-						photo.pin = pin // set an inverse relationship
-						photo.identifier = "\(pin.identifier)_\(index)" // creating an identifier by index
 						
-						trace("start downloading an image \(index)")
+						// [core data concurrency] update managed objects on main queue
+						self.sharedApp.dispatch_sync_main {
+							photo.pin = pin // set an inverse relationship
+							photo.identifier = "\(pin.identifier)_\(index)" // creating an identifier by index
+						}
+						
+						trace("start downloading an image \(index)", detail: true)
 						self.downloadImageFromServer(photo) { image in
 							imageDownloadHandler(photoIndex: index)
 						}
@@ -356,26 +375,43 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 	/// - parameter photo: a photo object to be downloaded
 	/// - parameter completionHandler: a completion handler called on the download finished
 	private func downloadImageFromServer(photo: Photo, completionHandler: (image: UIImage?) -> ()) {
-		photo.downloaded = Photo.Status.Downloading.rawValue
+		trace("check thread at downloadImageFromServer", detail: true) // global queue
 		
-		imageDownloader.downloadImageAsync(photo.url) { (image, success) -> () in
-			if success {
-				if let _ = image {
-					trace("finished downloading the image: photo id:\(photo.identifier)")
-					// save the downloaded data to the image storage
-					self.imageStorage.storeImage(image, identifier: photo.identifier)
-					photo.path = self.imageStorage.createFileURL(photo.identifier)
-					photo.downloaded = Photo.Status.Downloaded.rawValue
+		
+		// [core data concurrency] access managed objects on main queue
+		var url = ""
+		sharedApp.dispatch_sync_main {
+			photo.downloaded = Photo.Status.Downloading.rawValue
+			url = photo.url
+		}
+			
+		imageDownloader.downloadImageAsync(url) { (image, success) -> () in
+			trace("check thread after downloadImageAsync", detail: true) // global queue
+
+			// [core data concurrency] update managed objects on main queue
+			self.sharedApp.dispatch_sync_main {
+				
+				if success {
+					if let _ = image {
+						trace("finished downloading the image: photo id:\(photo.identifier)", detail: true)
+						// save the downloaded data to the image storage
+						self.imageStorage.storeImage(image, identifier: photo.identifier)
+						photo.path = self.imageStorage.createFileURL(photo.identifier)
+						photo.downloaded = Photo.Status.Downloaded.rawValue
+					}
+					else {
+						photo.downloaded = Photo.Status.DownladFailed.rawValue
+					}
 				}
 				else {
 					photo.downloaded = Photo.Status.DownladFailed.rawValue
 				}
-			}
-			else {
-				photo.downloaded = Photo.Status.DownladFailed.rawValue
-			}
+				
+				self.coreDataStack.saveContext()
+				
+			} // dispatch
 			
-			self.coreDataStack.saveContext()
+			
 			completionHandler(image: image)
 		}
 	}

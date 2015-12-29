@@ -37,12 +37,13 @@ class PinCreateDelegate : NSObject,  LongPressDelegate {
 	When long press gesture is started, a new pin should be created and render it on the map.
 	*/
 	func onLongPressStarted(coordinate: CLLocationCoordinate2D) {
+		trace("check thread at onLongPressStarted", detail: true) // main thread
+		
 		// disable the map scroll
 		ctx.mapView.scrollEnabled = false
-		//cxt.justLongPressStarted = true // enables drop animation
-		justStarted = true
+		justStarted = true // for drop animation
 		
-		// create a new pin
+		// [core data concurrency] create a new pin on the main thread
 		let newPin = Pin(coordinate: coordinate, context: ctx.managedObjectContext)
 		newPin.map = ctx.map // set relationship
 		ctx.pins.addObject(newPin)
@@ -217,6 +218,8 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 	
 	/// long press handlers that delete pins
 	var deletePinOperation: PinDeleteDelegate!
+	
+	let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
 	
 	//------------------------------------------------------------------------//
 	// UIViewController related methods
@@ -546,6 +549,8 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 
 	/// resume downloading images
 	private func resumeDownloadingImages() {
+		trace("check thread at resumeDownloadingImages", detail: true) // main thread
+		
 		// search pins whose photos are not completely downloaded
 		let unpreparedPins = pins.filter { (obj) -> Bool in
 			let pin = obj as! Pin
@@ -563,7 +568,6 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 		// search photos not completely downloaded
 		let unpreparedPhotos = unpreparedPins.reduce([Photo]()) { (var photos, elem) -> [Photo] in
 			let pin = elem as! Pin
-			// pin.checkCoredata()
 			let allPhotoSet = pin.valueForKeyPath("photos") as! NSMutableOrderedSet
 			let nondownloadedPhotos = allPhotoSet.reduce([Photo](), combine: { (var ret, elem) -> [Photo] in
 				let photo = elem as! Photo
@@ -582,31 +586,39 @@ class TravelLocationsMapViewController: UIViewController, MKMapViewDelegate, UIG
 			trace("resume downloading the image: photo id:\(photo.identifier)")
 			let pin = photo.pin!
 			
-			// restart downloading
 			photo.downloaded = Photo.Status.Downloading.rawValue
 			
 			ImageDownloader().downloadImageAsync(photo.url) { image, success in
-				if success {
-					if let _ = image {
-						trace("finished downloading the image: photo id:\(photo.identifier)")
-						ImageStorage().storeImage(image, identifier: photo.identifier)
-						photo.path = ImageStorage().createFileURL(photo.identifier)
-						photo.downloaded = Photo.Status.Downloaded.rawValue
+				trace("check current thread after downloadImageAsync", detail: true) // global gueue
+				
+				// [core data concurrency] update managed objects on main queue
+				self.sharedApp.dispatch_sync_main {
+					
+					if success {
+						if let _ = image {
+							trace("finished downloading the image: photo id:\(photo.identifier)")
+							ImageStorage().storeImage(image, identifier: photo.identifier)
+							photo.path = ImageStorage().createFileURL(photo.identifier)
+							photo.downloaded = Photo.Status.Downloaded.rawValue
+						}
+						else {
+							photo.downloaded = Photo.Status.DownladFailed.rawValue
+						}
 					}
 					else {
 						photo.downloaded = Photo.Status.DownladFailed.rawValue
 					}
-				}
-				else {
-					photo.downloaded = Photo.Status.DownladFailed.rawValue
-				}
+					
+					// check all photos are successfully downloaded
+					if Photo.checkAllPhotoDownloaded(pin.photos, isIncludeFailures: false) {
+						pin.allPhotoDownloaded = true
+					}
+					
+					self.coreDataStack.saveContext()
+						
+				} // dispatch
 				
-				// check all photos are successfully downloaded
-				if Photo.checkAllPhotoDownloaded(pin.photos, isIncludeFailures: false) {
-					pin.allPhotoDownloaded = true
-				}
 				
-				self.coreDataStack.saveContext()
 			}
 		}
 		
