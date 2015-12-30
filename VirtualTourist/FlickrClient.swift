@@ -147,11 +147,11 @@ extension FlickrClient {
 	/// - parameter searchFinishedHandler: a completion handler called on the photo search finished
 	func downloadPhotos(pin: Pin, page: Int, imageDownloadHandler: (photoIndex: Int)->(),
 		searchFinishedHandler: (success: Bool)->()) {
-			trace("chech thread at getImagesFromFlickr", detail: true) // main queue
+			trace("chech thread at downloadPhotos", detail: true) // main queue
 			
 			// search image urls from Flickr
 			FlickrClient.sharedInstance().searchPhotos(pin.coordinate, page: page) { _photos, total , success in
-				trace("chech thread after getImagesBySearch", detail: true) // global queue
+				trace("chech thread after searchPhotos", detail: true) // global queue
 				
 				if success {
 					trace("got images from Flikcr!", detail: true)
@@ -187,7 +187,7 @@ extension FlickrClient {
 	/// - parameter photo: a photo object to be downloaded
 	/// - parameter completionHandler: a completion handler called on the download finished
 	private func downloadImageData(photo: Photo, completionHandler: (image: UIImage?) -> ()) {
-		trace("check thread at downloadImageFromServer", detail: true) // global queue
+		trace("check thread at downloadImageData", detail: true) // global queue
 		let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
 		
 		// [core data concurrency] access managed objects on the main queue
