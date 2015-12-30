@@ -121,7 +121,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDataSource, UI
 		// new image set
 		page++
 		// download new images and replace current photos with them
-		FlickrClient.sharedInstance().downloadPicturesByFlickrPhotosSearch(pin, page: page, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: onPhotoURLsRetrieved)
+		FlickrClient.sharedInstance().downloadPhotos(pin, page: page, imageDownloadHandler: onImageDownloaded, searchFinishedHandler: onPhotoURLsRetrieved)
 	}
 
 	//------------------------------------------------------------------------//

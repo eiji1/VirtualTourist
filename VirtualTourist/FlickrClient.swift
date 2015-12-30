@@ -69,7 +69,7 @@ class FlickrClient{
 	/// - parameter coordinates: a place where photos are taken
 	/// - parameter page: a number identifying the set of photo groups
 	/// - parameter handler: completion handler
-	func getImagesBySearch(coordinates: CLLocationCoordinate2D, page: Int, handler: (photos: [Photo], total: Int, success: Bool) -> ()) {
+	func searchPhotos(coordinates: CLLocationCoordinate2D, page: Int, handler: (photos: [Photo], total: Int, success: Bool) -> ()) {
 		
 		let arguments : WebClient.JSONBody = [
 			ParameterKeys.Method: FlickrClient.Method,
@@ -145,12 +145,12 @@ extension FlickrClient {
 	/// - parameter pin: a pin object which has a location where photos should be searched
 	/// - parameter imageDownloadedHandler: a completion handler called on image downloading finished
 	/// - parameter searchFinishedHandler: a completion handler called on the photo search finished
-	func downloadPicturesByFlickrPhotosSearch(pin: Pin, page: Int, imageDownloadHandler: (photoIndex: Int)->(),
+	func downloadPhotos(pin: Pin, page: Int, imageDownloadHandler: (photoIndex: Int)->(),
 		searchFinishedHandler: (success: Bool)->()) {
 			trace("chech thread at getImagesFromFlickr", detail: true) // main queue
 			
 			// search image urls from Flickr
-			FlickrClient.sharedInstance().getImagesBySearch(pin.coordinate, page: page) { _photos, total , success in
+			FlickrClient.sharedInstance().searchPhotos(pin.coordinate, page: page) { _photos, total , success in
 				trace("chech thread after getImagesBySearch", detail: true) // global queue
 				
 				if success {
@@ -171,7 +171,7 @@ extension FlickrClient {
 							}
 							
 							trace("start downloading an image \(index)", detail: true)
-							self.downloadImageFromServer(photo) { image in
+							self.downloadImageData(photo) { image in
 								imageDownloadHandler(photoIndex: index)
 							}
 						}
@@ -186,11 +186,11 @@ extension FlickrClient {
 	/// - returns: None
 	/// - parameter photo: a photo object to be downloaded
 	/// - parameter completionHandler: a completion handler called on the download finished
-	private func downloadImageFromServer(photo: Photo, completionHandler: (image: UIImage?) -> ()) {
+	private func downloadImageData(photo: Photo, completionHandler: (image: UIImage?) -> ()) {
 		trace("check thread at downloadImageFromServer", detail: true) // global queue
 		let sharedApp = (UIApplication.sharedApplication().delegate as! AppDelegate)
 		
-		// [core data concurrency] access managed objects on main queue
+		// [core data concurrency] access managed objects on the main queue
 		var url = ""
 		sharedApp.dispatch_sync_main {
 			photo.downloaded = Photo.Status.Downloading.rawValue
@@ -200,7 +200,7 @@ extension FlickrClient {
 		ImageDownloader().downloadImageAsync(url) { (image, success) -> () in
 			trace("check thread after downloadImageAsync", detail: true) // global queue
 			
-			// [core data concurrency] update managed objects on main queue
+			// [core data concurrency] update managed objects on the main queue
 			
 			sharedApp.dispatch_sync_main {
 				
